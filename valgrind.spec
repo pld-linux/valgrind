@@ -48,7 +48,7 @@ mo¿na wykryæ nastêpuj±ce problemy:
 - Przekazywanie niezainicjalizowanej i/lub nieadresowalnej pamiêci do
   odwo³añ systemowych
 - Niekonsekwencja w u¿ywaniu malloc/new/new [] kontra free/delete/delete []
-- Niektóre nadu¿ycie API POSIX pthreads
+- Niektóre nadu¿ycia API POSIX pthreads
 
 %prep
 %setup -q
