@@ -8,7 +8,7 @@ License:	GPL
 Group:		Development/Tools
 #Source0:	http://developer.kde.org/~sewardj/valgrind-%{version}.tar.bz2
 Source0:	%{name}-%{_snap}.tar.bz2
-# Source0-md5:	33551ee2808fa5f63a30f2dee952a3dc
+# Source0-md5:	adeb714a14f5b79dae30eb0e46515e83
 URL:		http://valgrind.kde.org/
 # Needs libc.a
 BuildRequires:	glibc-static  
