@@ -2,7 +2,7 @@ Summary:	An open-source memory debugger for x86-GNU/Linux
 Summary(pl):	Otwarty odpluskwiacz pamiêci dla Linuksa x86
 Name:		valgrind
 Version:	1.0.0
-Release:	2
+Release:	3
 License:	GPL
 ExclusiveArch:	%{ix86}
 Group:		Networking/Utilities
@@ -14,6 +14,9 @@ BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 # Valgrind binaries should _never_ be stripped
 %define		no_install_post_strip	1
+
+# Same name as libpthread
+%define		_noautoprovfiles %{_libdir}/%{name}/libpthread.so.0 %{_libdir}/%{name}/libpthread.so %{_libdir}/%{name}/valgrind.so %{_libdir}/%{name}/valgrinq.so
 
 %description
 Valgrind is a GPL'd tool to help you find memory-management problems
