@@ -1,0 +1,82 @@
+diff -ruN valgrind./helgrind/hg_main.c valgrind/helgrind/hg_main.c
+--- valgrind./helgrind/hg_main.c	2004-01-05 00:08:03.000000000 +0100
++++ valgrind/helgrind/hg_main.c	2004-02-29 15:25:04.411765536 +0100
+@@ -3103,42 +3103,42 @@
+ 
+ #undef DEBUG_STATE
+ 
+-static void eraser_mem_help_read_1(Addr a)
++REGPARM(1) static void eraser_mem_help_read_1(Addr a)
+ {
+    eraser_mem_read(a, 1, VG_(get_current_tid)());
+ }
+ 
+-static void eraser_mem_help_read_2(Addr a)
++REGPARM(1) static void eraser_mem_help_read_2(Addr a)
+ {
+    eraser_mem_read(a, 2, VG_(get_current_tid)());
+ }
+ 
+-static void eraser_mem_help_read_4(Addr a)
++REGPARM(1) static void eraser_mem_help_read_4(Addr a)
+ {
+    eraser_mem_read(a, 4, VG_(get_current_tid)());
+ }
+ 
+-static void eraser_mem_help_read_N(Addr a, UInt size)
++REGPARM(2) static void eraser_mem_help_read_N(Addr a, UInt size)
+ {
+    eraser_mem_read(a, size, VG_(get_current_tid)());
+ }
+ 
+-static void eraser_mem_help_write_1(Addr a, UInt val)
++REGPARM(2) static void eraser_mem_help_write_1(Addr a, UInt val)
+ {
+    if (*(UChar *)a != val)
+       eraser_mem_write(a, 1, VG_(get_current_tid)());
+ }
+-static void eraser_mem_help_write_2(Addr a, UInt val)
++REGPARM(2) static void eraser_mem_help_write_2(Addr a, UInt val)
+ {
+    if (*(UShort *)a != val)
+       eraser_mem_write(a, 2, VG_(get_current_tid)());
+ }
+-static void eraser_mem_help_write_4(Addr a, UInt val)
++REGPARM(2) static void eraser_mem_help_write_4(Addr a, UInt val)
+ {
+    if (*(UInt *)a != val)
+       eraser_mem_write(a, 4, VG_(get_current_tid)());
+ }
+-static void eraser_mem_help_write_N(Addr a, UInt size)
++REGPARM(2) static void eraser_mem_help_write_N(Addr a, UInt size)
+ {
+    eraser_mem_write(a, size, VG_(get_current_tid)());
+ }
+diff -ruN valgrind./memcheck/mc_include.h valgrind/memcheck/mc_include.h
+--- valgrind./memcheck/mc_include.h	2004-01-04 17:43:22.000000000 +0100
++++ valgrind/memcheck/mc_include.h	2004-02-29 15:16:14.271359128 +0100
+@@ -121,16 +121,16 @@
+ 
+ 
+ /* Functions defined in mc_main.c */
+-extern void MC_(helperc_STOREV4) ( Addr, UInt );
+-extern void MC_(helperc_STOREV2) ( Addr, UInt );
+-extern void MC_(helperc_STOREV1) ( Addr, UInt );
++extern __attribute__ ((regparm(2))) void MC_(helperc_STOREV4) ( Addr, UInt );
++extern __attribute__ ((regparm(2))) void MC_(helperc_STOREV2) ( Addr, UInt );
++extern __attribute__ ((regparm(2))) void MC_(helperc_STOREV1) ( Addr, UInt );
+    
+-extern UInt MC_(helperc_LOADV1) ( Addr );
+-extern UInt MC_(helperc_LOADV2) ( Addr );
+-extern UInt MC_(helperc_LOADV4) ( Addr );
++extern __attribute__ ((regparm(1))) UInt MC_(helperc_LOADV1) ( Addr );
++extern __attribute__ ((regparm(1))) UInt MC_(helperc_LOADV2) ( Addr );
++extern __attribute__ ((regparm(1))) UInt MC_(helperc_LOADV4) ( Addr );
+ 
+-extern void MC_(fpu_write_check) ( Addr addr, Int size );
+-extern void MC_(fpu_read_check)  ( Addr addr, Int size );
++extern __attribute__ ((regparm(2))) void MC_(fpu_write_check) ( Addr addr, Int size );
++extern __attribute__ ((regparm(2))) void MC_(fpu_read_check)  ( Addr addr, Int size );
+ 
+ 
+ /* For client requests */
