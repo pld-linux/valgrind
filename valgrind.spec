@@ -5,7 +5,7 @@ Name:		valgrind
 Version:	1.9.6
 Release:	1.%{snap}.1
 License:	GPL
-Group:		Networking/Utilities
+Group:		Development/Tools
 Source0:	http://developer.kde.org/~sewardj/%{name}-%{snap}.tar.bz2
 # Source0-md5:	4a3d02cb9972af801651cf3effb005eb
 #Source0:	%{name}-%{snap}.tar.bz2
