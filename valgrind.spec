@@ -1,4 +1,4 @@
-%define		snap	20030329
+%define		snap	20030330
 Summary:	An open-source memory debugger for x86-GNU/Linux
 Summary(pl):	Otwarty odpluskwiacz pamiêci dla Linuksa x86
 Name:		valgrind
@@ -21,38 +21,37 @@ BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 %define		_noautoprovfiles %{_libdir}/%{name}/libpthread.so.0 %{_libdir}/%{name}/libpthread.so %{_libdir}/%{name}/valgrind.so %{_libdir}/%{name}/valgrinq.so
 
 %description
-Valgrind is a GPL'd tool to help you find memory-management problems
-in your programs. When a program is run under Valgrind's supervision,
-all reads and writes of memory are checked, and calls to
-malloc/new/free/delete are intercepted. As a result, Valgrind can
-detect problems such as:
+Valgrind is a flexible tool for debugging and profiling Linux-x86
+executables. The tool consists of a core, which provides a synthetic
+x86 CPU in software, and a series of "skins", each of which is a
+debugging or profiling tool. The architecture is modular, so that new
+skins can be created easily and without disturbing the existing
+structure.
 
-- Use of uninitialised memory
-- Reading/writing memory after it has been free'd
-- Reading/writing off the end of malloc'd blocks
-- Reading/writing inappropriate areas on the stack
-- Memory leaks -- where pointers to malloc'd blocks are lost forever
-- Passing of uninitialised and/or unaddressible memory to system calls
-- Mismatched use of malloc/new/new [] vs free/delete/delete []
-- Some misuses of the POSIX pthreads API
+A number of useful skins are supplied as standard. In summary, these
+are:
+- The memcheck skin detects memory-management problems in your
+  programs,
+- cachegrind performs detailed simulation of the I1, D1 and L2 caches
+  in your CPU and so can accurately pinpoint the sources of cache misses
+  in your code,
+- addrcheck skin is a lightweight version of memcheck,
+- helgrind is designed to find data races in multithreaded programs.
 
 %description -l pl
-Valgrind jest narzêdziem rozwi±zuj±cym problemy zwi±zane z zarz±dzaniem
-pamiêci± w programach. Gdy program zostaje uruchomiony pod nadzorem
-Valgrinda wszystkie odczyty i zapisy do pamiêci s± sprawdzane.
-Przechwytywane s± te¿ odwo³ania do malloc/new/free/delete. Dziêki temu
-mo¿na wykryæ nastêpuj±ce problemy:
+Valgrind jest elastycznym narzêdziem s³u¿±cym do odpluskwiania i
+profilowania programów pod Linuksem. Sk³ada siê z rdzenia
+dostarczaj±cego syntetyczny emulowany procesor zgodny z x86 i ze
+"skórek" bêd±cych narzêdziami o ró¿nych zastosowaniach. Architektura
+programu jest modularna, wobec czego ³atwo mo¿na stworzyæ nowe skórki
+nie ryzykuj±c popsucia reszty.
 
-- U¿ycie niezainicjalizowanej pamiêci
-- Odczytywanie/zapisywanie do obszaru pamiêci, który zosta³ zwolniony
-- Odczytywanie/zapisywanie na koñcach zaalokowanych bloków
-- Odczytywanie/zapisywanie niew³a¶ciwych obszarów na stosie
-- Wycieki pamiêci -- gdy wska¼niki do zaalokowanych bloków s± stracone na
-  zawsze
-- Przekazywanie niezainicjalizowanej i/lub nieadresowalnej pamiêci do
-  odwo³añ systemowych
-- Niekonsekwencja w u¿ywaniu malloc/new/new [] kontra free/delete/delete []
-- Niektóre nadu¿ycia API POSIX pthreads
+Standardowo dostarczone jest kilka u¿ytecznych skórek:
+- memcheck wykrywa problemy z zarz±dzaniem pamiêci± w programach,
+- cachegrind przeprowadza symulacjê pamiêci cache procesora w celu
+  znalezienia miejsc, w których cache zawodzi,
+- addrcheck jest lekk± wersj± memchecka,
+- helgrind wykrywa konflikty dostêpu w wielow±tkowych programach.
 
 %prep
 %setup -q -n %{name}
