@@ -9,8 +9,7 @@ Group:		Development/Tools
 Source0:	http://developer.kde.org/~sewardj/valgrind-%{version}.tar.bz2
 # Source0-md5:	3e4056dd45163a5f555a23ced2f95191
 #Source0:	%{name}-%{snap}.tar.bz2
-Patch0:		%{name}-sockios.patch
-Patch1:		%{name}-kernel-headers.patch
+Patch0:		%{name}-include_fs.patch
 URL:		http://valgrind.kde.org/
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -59,7 +58,6 @@ Standardowo dostarczone jest kilka u¿ytecznych skórek:
 %prep
 %setup -q
 %patch0 -p1
-%patch1 -p1
 
 %build
 %{__aclocal}
