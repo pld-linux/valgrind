@@ -10,6 +10,7 @@ Source0:	http://developer.kde.org/~sewardj/%{name}-%{snap}.tar.bz2
 # Source0-md5:	4a3d02cb9972af801651cf3effb005eb
 #Source0:	%{name}-%{snap}.tar.bz2
 Patch0:		%{name}-sockios.patch
+Patch1:		%{name}-linux26.patch
 URL:		http://developer.kde.org/~sewardj/
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -58,9 +59,9 @@ Standardowo dostarczone jest kilka u¿ytecznych skórek:
 %prep
 %setup -q -n %{name}-%{snap}
 %patch0 -p1
+%patch1 -p1
 
 %build
-rm -f missing
 %{__aclocal}
 %{__autoheader}
 %{__autoconf}
