@@ -2,13 +2,13 @@
 Summary:	An open-source memory debugger for x86-GNU/Linux
 Summary(pl):	Otwarty odpluskwiacz pamiêci dla Linuksa x86
 Name:		valgrind
-Version:	1.9.4
-Release:	1.%{snap}.1
+Version:	1.9.5
+Release:	1
 License:	GPL
 ExclusiveArch:	%{ix86}
 Group:		Networking/Utilities
-#Source0:	http://developer.kde.org/~sewardj/%{name}-%{version}.tar.bz2
-Source0:	%{name}-%{snap}.tar.bz2
+Source0:	http://developer.kde.org/~sewardj/%{name}-%{version}.tar.bz2
+#Source0:	%{name}-%{snap}.tar.bz2
 URL:		http://developer.kde.org/~sewardj/
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -54,7 +54,7 @@ Standardowo dostarczone jest kilka u¿ytecznych skórek:
 - helgrind wykrywa konflikty dostêpu w wielow±tkowych programach.
 
 %prep
-%setup -q -n %{name}
+%setup -q
 
 # pthread_atfork() not found (?)
 echo "main(){}" > corecheck/tests/pth_atfork1.c
