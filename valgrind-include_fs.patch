@@ -1,0 +1,14 @@
+--- valgrind-2.1.0/coregrind/vg_syscalls.c~	2003-12-12 07:46:54.000000000 +0000
++++ valgrind-2.1.0/coregrind/vg_syscalls.c	2004-02-08 20:09:01.000000000 +0000
+@@ -34,6 +34,11 @@
+    one. */
+ #include "vg_unsafe.h"
+ 
++#include <linux/version.h>
++#ifdef LIBC_HEADERS_VERSION
++/* Fixed headers detected -- BLKGETSIZE definition is there */
++#include <linux/fs.h>
++#endif
+ 
+ /* All system calls are channelled through here, doing two things:
+ 
