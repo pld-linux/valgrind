@@ -8,7 +8,7 @@ License:	GPL
 Group:		Development/Tools
 #Source0:	http://developer.kde.org/~sewardj/valgrind-%{version}.tar.bz2
 Source0:	%{name}-%{snap}.tar.bz2
-# Source0-md5:	1363a4e29ee9b698c37a92a6a9b62ed0
+# Source0-md5:	1a12c4a131531023f4c0bfc62f6ff744
 Patch0:		%{name}-gcc34.patch
 URL:		http://valgrind.kde.org/
 BuildRequires:	autoconf
