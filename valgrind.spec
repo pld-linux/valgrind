@@ -23,37 +23,21 @@ BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 %define		_noautoprovfiles %{_libdir}/%{name}/libpthread.so.0 %{_libdir}/%{name}/libpthread.so %{_libdir}/%{name}/valgrind.so %{_libdir}/%{name}/valgrinq.so
 
 %description
-Valgrind is a flexible tool for debugging and profiling Linux-x86
-executables. The tool consists of a core, which provides a synthetic
-x86 CPU in software, and a series of "skins", each of which is a
-debugging or profiling tool. The architecture is modular, so that new
-skins can be created easily and without disturbing the existing
-structure.
-
-A number of useful skins are supplied as standard. In summary, these
-are:
-- The memcheck skin detects memory-management problems in your
-  programs,
-- cachegrind performs detailed simulation of the I1, D1 and L2 caches
-  in your CPU and so can accurately pinpoint the sources of cache misses
-  in your code,
-- addrcheck skin is a lightweight version of memcheck,
-- helgrind is designed to find data races in multithreaded programs.
+Valgrind is a GPL'd system for debugging and profiling x86-Linux
+programs. With the tools that come with Valgrind, you can
+automatically detect many memory management and threading bugs,
+avoiding hours of frustrating bug-hunting, making your programs more
+stable. You can also perform detailed profiling to help speed up your
+programs.
 
 %description -l pl
-Valgrind jest elastycznym narzêdziem s³u¿±cym do odpluskwiania i
-profilowania programów pod Linuksem. Sk³ada siê z rdzenia
-dostarczaj±cego syntetyczny emulowany procesor zgodny z x86 i ze
-"skórek" bêd±cych narzêdziami o ró¿nych zastosowaniach. Architektura
-programu jest modularna, wobec czego ³atwo mo¿na stworzyæ nowe skórki
-nie ryzykuj±c popsucia reszty.
-
-Standardowo dostarczone jest kilka u¿ytecznych skórek:
-- memcheck wykrywa problemy z zarz±dzaniem pamiêci± w programach,
-- cachegrind przeprowadza symulacjê pamiêci cache procesora w celu
-  znalezienia miejsc, w których cache zawodzi,
-- addrcheck jest lekk± wersj± memchecka,
-- helgrind wykrywa konflikty dostêpu w wielow±tkowych programach.
+Valgrind jest systemem s³u¿±cym do odpluskwiania i profilowania
+programów na Linuksie uruchomionym na procesorach x86. U¿ywaj±c
+dostarczanych z nim narzêdzi mo¿na automatycznie wykrywaæ wiele
+b³êdów zwi±zanych z zarz±dzaniem pamiêci± i w±tkowaniem, dziêki
+czemu unika siê frustruj±cego polowania na b³êdy, a tak¿e czyni
+siê programy bardziej stabilnymi. Mo¿liwe jest równie¿ dok³adne
+profilowanie, dziêki któremu programy zaczn± szybciej pracowaæ.
 
 %prep
 %setup -q
