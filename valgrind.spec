@@ -1,14 +1,13 @@
-%define		_snap	20040612
+#%define		_snap	20040612
 Summary:	An open-source memory debugger for x86-GNU/Linux
 Summary(pl):	Otwarty odpluskwiacz pamiêci dla Linuksa x86
 Name:		valgrind
 Version:	2.1.2
-Release:	0.%{_snap}.1
+Release:	1
 License:	GPL
 Group:		Development/Tools
-#Source0:	http://developer.kde.org/~sewardj/valgrind-%{version}.tar.bz2
-Source0:	%{name}-%{_snap}.tar.bz2
-# Source0-md5:	adeb714a14f5b79dae30eb0e46515e83
+Source0:	http://developer.kde.org/~sewardj/valgrind-%{version}.tar.bz2
+# Source0-md5:	585e3ac5f7b86d6cd3e2bed07af732de
 URL:		http://valgrind.kde.org/
 # Needs libc.a
 BuildRequires:	glibc-static  
@@ -41,7 +40,7 @@ siê programy bardziej stabilnymi. Mo¿liwe jest równie¿ dok³adne
 profilowanie, dziêki któremu programy zaczn± szybciej pracowaæ.
 
 %prep
-%setup -q -n %{name}-%{_snap}
+%setup -q
 
 %build
 %{__aclocal}
