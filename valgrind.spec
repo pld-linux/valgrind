@@ -5,7 +5,6 @@ Name:		valgrind
 Version:	1.9.6
 Release:	1.%{snap}.1
 License:	GPL
-ExclusiveArch:	%{ix86}
 Group:		Networking/Utilities
 Source0:	http://developer.kde.org/~sewardj/%{name}-%{snap}.tar.bz2
 # Source0-md5:	f09994ef936088d215902548f55c8d68
@@ -14,6 +13,7 @@ Patch0:		%{name}-sockios.patch
 URL:		http://developer.kde.org/~sewardj/
 BuildRequires:	autoconf
 BuildRequires:	automake
+ExclusiveArch:	%{ix86}
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 # Valgrind binaries should _never_ be stripped
@@ -72,7 +72,8 @@ rm -f missing
 %install
 rm -rf $RPM_BUILD_ROOT
 
-%{__make} install DESTDIR=$RPM_BUILD_ROOT
+%{__make} install \
+	DESTDIR=$RPM_BUILD_ROOT
 
 %clean
 rm -rf $RPM_BUILD_ROOT
