@@ -1,15 +1,16 @@
-#%define		snap	20031012
+%define		snap	20040220
 Summary:	An open-source memory debugger for x86-GNU/Linux
 Summary(pl):	Otwarty odpluskwiacz pamiêci dla Linuksa x86
 Name:		valgrind
 Version:	2.1.0
-Release:	1
+Release:	1.%{snap}.1
 License:	GPL
 Group:		Development/Tools
-Source0:	http://developer.kde.org/~sewardj/valgrind-%{version}.tar.bz2
-# Source0-md5:	3e4056dd45163a5f555a23ced2f95191
-#Source0:	%{name}-%{snap}.tar.bz2
+#Source0:	http://developer.kde.org/~sewardj/valgrind-%{version}.tar.bz2
+Source0:	%{name}-%{snap}.tar.bz2
+# Source0-md5:	1363a4e29ee9b698c37a92a6a9b62ed0
 Patch0:		%{name}-include_fs.patch
+Patch1:		%{name}-athlon.patch
 URL:		http://valgrind.kde.org/
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -40,8 +41,9 @@ siê programy bardziej stabilnymi. Mo¿liwe jest równie¿ dok³adne
 profilowanie, dziêki któremu programy zaczn± szybciej pracowaæ.
 
 %prep
-%setup -q
-%patch0 -p1
+%setup -q -n %{name}
+#%patch0 -p1
+%patch1 -p0
 
 %build
 %{__aclocal}
@@ -58,15 +60,20 @@ rm -rf $RPM_BUILD_ROOT
 %{__make} install \
 	DESTDIR=$RPM_BUILD_ROOT
 
+strip $RPM_BUILD_ROOT%{_libdir}/%{name}/hp2ps
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(644,root,root,755)
-%doc ACKNOWLEDGEMENTS AUTHORS FAQ.txt NEWS PATCHES_APPLIED
-%doc README README_MISSING_SYSCALL_OR_IOCTL TODO
+%doc ACKNOWLEDGEMENTS AUTHORS FAQ.txt NEWS README README_MISSING_SYSCALL_OR_IOCTL TODO
 %doc $RPM_BUILD_ROOT%{_docdir}/valgrind/*.html
 %attr(755,root,root) %{_bindir}/*
-%{_libdir}/%{name}
+%dir %{_libdir}/%{name}
+%attr(755,root,root) %{_libdir}/%{name}/*.so
+%attr(755,root,root) %{_libdir}/%{name}/hp2ps
+%attr(755,root,root) %{_libdir}/%{name}/stage2
+%{_libdir}/%{name}/*.supp
 %{_includedir}/*
 %{_pkgconfigdir}/*.pc
