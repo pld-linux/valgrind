@@ -72,6 +72,7 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755,root,root) %{_bindir}/*
 %dir %{_libdir}/%{name}
 %attr(755,root,root) %{_libdir}/%{name}/*.so
+%{_libdir}/%{name}/*.so.*
 %attr(755,root,root) %{_libdir}/%{name}/hp2ps
 %attr(755,root,root) %{_libdir}/%{name}/stage2
 %{_libdir}/%{name}/*.supp
