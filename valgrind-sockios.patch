@@ -1,0 +1,9 @@
+diff -ruN valgrind./coregrind/vg_syscalls.c valgrind/coregrind/vg_syscalls.c
+--- valgrind./coregrind/vg_syscalls.c	2003-06-12 16:27:58.000000000 +0200
++++ valgrind/coregrind/vg_syscalls.c	2003-06-12 17:52:34.000000000 +0200
+@@ -1,4 +1,4 @@
+-
++#include <linux/sockios.h>
+ /*--------------------------------------------------------------------*/
+ /*--- Update the byte permission maps following a system call.     ---*/
+ /*---                                             vg_syscall_mem.c ---*/
