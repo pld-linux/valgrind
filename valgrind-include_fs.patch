@@ -12,3 +12,33 @@
  
  /* All system calls are channelled through here, doing two things:
  
+--- valgrind-2.1.0/coregrind/vg_intercept.c~	2003-11-20 16:20:54.000000000 +0000
++++ valgrind-2.1.0/coregrind/vg_intercept.c	2004-02-08 21:11:33.000000000 +0000
+@@ -57,9 +57,12 @@
+ #include <stdio.h>
+ #include <sys/ipc.h>
+ #include <sys/msg.h>
++#include <linux/version.h>
++#ifndef LIBC_HEADERS_VERSION
+ #ifdef KERNEL_2_6
+ #include <linux/compiler.h>
+ #endif
++#endif
+ #include <asm/ipc.h>		/* for ipc_kludge */
+ #include <sys/poll.h>
+ #include <sys/socket.h>
+--- valgrind-2.1.0/coregrind/vg_unsafe.h~	2003-11-19 22:07:14.000000000 +0000
++++ valgrind-2.1.0/coregrind/vg_unsafe.h	2004-02-08 21:15:38.000000000 +0000
+@@ -50,9 +50,12 @@
+ #include <net/if.h>       /* for struct ifreq et al */
+ #include <net/if_arp.h>   /* for struct arpreq */
+ #include <net/route.h>    /* for struct rtentry */
++#include <linux/version.h>
++#ifndef LIBC_HEADERS_VERSION
+ #ifdef KERNEL_2_6
+ #include <linux/compiler.h> /* for __user definition */
+ #endif
++#endif
+ #include <asm/ipc.h>      /* for struct ipc_kludge */
+ #include <linux/msg.h>    /* for struct msgbuf */
+ #include <linux/sem.h>    /* for struct sembuf */
