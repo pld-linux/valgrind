@@ -1,17 +1,16 @@
-%define		snap	20031012
+#%define		snap	20031012
 Summary:	An open-source memory debugger for x86-GNU/Linux
 Summary(pl):	Otwarty odpluskwiacz pamiêci dla Linuksa x86
 Name:		valgrind
-Version:	1.9.6
-Release:	1.%{snap}.1
+Version:	2.0.0
+Release:	1
 License:	GPL
 Group:		Development/Tools
-Source0:	http://developer.kde.org/~sewardj/%{name}-%{snap}.tar.bz2
-# Source0-md5:	4a3d02cb9972af801651cf3effb005eb
+Source0:	http://developer.kde.org/~sewardj/valgrind-%{version}.tar.bz2
+# Source0-md5:	1f6a90d0ca494fb75eaeef498e8252b5
 #Source0:	%{name}-%{snap}.tar.bz2
 Patch0:		%{name}-sockios.patch
-Patch1:		%{name}-linux26.patch
-URL:		http://developer.kde.org/~sewardj/
+URL:		http://valgrind.kde.org/downloads.html
 BuildRequires:	autoconf
 BuildRequires:	automake
 ExclusiveArch:	%{ix86}
@@ -57,9 +56,8 @@ Standardowo dostarczone jest kilka u¿ytecznych skórek:
 - helgrind wykrywa konflikty dostêpu w wielow±tkowych programach.
 
 %prep
-%setup -q -n %{name}-%{snap}
+%setup -q
 %patch0 -p1
-%patch1 -p1
 
 %build
 %{__aclocal}
