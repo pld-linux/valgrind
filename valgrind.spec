@@ -83,5 +83,6 @@ rm -rf $RPM_BUILD_ROOT
 %doc README README_MISSING_SYSCALL_OR_IOCTL TODO
 %doc $RPM_BUILD_ROOT%{_docdir}/valgrind/*.html
 %attr(755,root,root) %{_bindir}/*
-%{_includedir}/*
 %{_libdir}/%{name}
+%{_includedir}/*
+%{_pkgconfigdir}/*.pc
