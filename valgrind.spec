@@ -1,8 +1,8 @@
-%define		snap	20030416
+%define		snap	20030517
 Summary:	An open-source memory debugger for x86-GNU/Linux
 Summary(pl):	Otwarty odpluskwiacz pamiêci dla Linuksa x86
 Name:		valgrind
-Version:	1.9.5
+Version:	1.9.6
 Release:	1.%{snap}.1
 License:	GPL
 ExclusiveArch:	%{ix86}
@@ -56,9 +56,6 @@ Standardowo dostarczone jest kilka u¿ytecznych skórek:
 %prep
 %setup -q -n %{name}
 
-# pthread_atfork() not found (?)
-echo "main(){}" > corecheck/tests/pth_atfork1.c
-
 %build
 rm -f missing
 %{__aclocal}
@@ -79,7 +76,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(644,root,root,755)
-%doc ACKNOWLEDGEMENTS AUTHORS PATCHES_APPLIED
+%doc ACKNOWLEDGEMENTS AUTHORS FAQ.txt NEWS PATCHES_APPLIED
 %doc README README_MISSING_SYSCALL_OR_IOCTL TODO
 %doc $RPM_BUILD_ROOT%{_docdir}/valgrind/*.html
 %attr(755,root,root) %{_bindir}/*
