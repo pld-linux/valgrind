@@ -2,12 +2,12 @@
 Summary:	An open-source memory debugger for x86-GNU/Linux
 Summary(pl):	Otwarty odpluskwiacz pamiêci dla Linuksa x86
 Name:		valgrind
-Version:	2.0.0
+Version:	2.1.0
 Release:	1
 License:	GPL
 Group:		Development/Tools
 Source0:	http://developer.kde.org/~sewardj/valgrind-%{version}.tar.bz2
-# Source0-md5:	1f6a90d0ca494fb75eaeef498e8252b5
+# Source0-md5:	3e4056dd45163a5f555a23ced2f95191
 #Source0:	%{name}-%{snap}.tar.bz2
 Patch0:		%{name}-sockios.patch
 URL:		http://valgrind.kde.org/downloads.html
