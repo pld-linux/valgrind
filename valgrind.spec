@@ -57,7 +57,7 @@ mo¿na wykryæ nastêpuj±ce problemy:
 
 %build
 rm -f missing
-aclocal
+%{__aclocal}
 %{__autoconf}
 %{__automake}
 %configure \
