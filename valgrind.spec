@@ -1,4 +1,4 @@
-%define		snap	20030330
+%define		snap	20030329
 Summary:	An open-source memory debugger for x86-GNU/Linux
 Summary(pl):	Otwarty odpluskwiacz pamiêci dla Linuksa x86
 Name:		valgrind
