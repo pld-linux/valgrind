@@ -8,6 +8,7 @@ License:	GPL
 ExclusiveArch:	%{ix86}
 Group:		Networking/Utilities
 #Source0:	http://developer.kde.org/~sewardj/%{name}-%{version}.tar.bz2
+#Source0-md5:	fc986c28be6a5f4aa0a52a958d3620c3
 Source0:	%{name}-%{snap}.tar.bz2
 URL:		http://developer.kde.org/~sewardj/
 BuildRequires:	autoconf
