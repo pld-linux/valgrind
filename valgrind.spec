@@ -12,9 +12,8 @@ BuildRequires:	autoconf
 BuildRequires:	automake
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
-# valgrind binaries should _never_ be stripped
-# anyone knows better solution?
-%define		debug	1
+# Valgrind binaries should _never_ be stripped
+%define		no_install_post_strip	1
 
 %description
 Valgrind is a GPL'd tool to help you find memory-management problems
@@ -58,7 +57,8 @@ rm -f missing
 aclocal
 %{__autoconf}
 %{__automake}
-%configure
+%configure \
+	LDFLAGS="" # no strip!
 %{__make}
 
 %install
