@@ -1,4 +1,5 @@
 Summary:	An open-source memory debugger for x86-GNU/Linux
+Summary(pl):	Otwarty odpluskwiacz pamiêci dla Linuksa x86
 Name:		valgrind
 Version:	1.0.0
 Release:	1
@@ -30,6 +31,24 @@ detect problems such as:
 - Passing of uninitialised and/or unaddressible memory to system calls
 - Mismatched use of malloc/new/new [] vs free/delete/delete []
 - Some misuses of the POSIX pthreads API
+
+%description -l pl
+Valgrind jest narzêdziem rozwi±zuj±cym problemy zwi±zane z zarz±dzaniem
+pamiêci± w programach. Gdy program zostaje uruchomiony pod nadzorem
+Valgrinda wszystkie odczyty i zapisy do pamiêci s± sprawdzane.
+Przechwytywane s± te¿ odwo³ania do malloc/new/free/delete. Dziêki temu
+mo¿na wykryæ nastêpuj±ce problemy:
+
+- U¿ycie niezainicjalizowanej pamiêci
+- Odczytywanie/zapisywanie do obszaru pamiêci, który zosta³ zwolniony
+- Odczytywanie/zapisywanie na koñcach zaalokowanych bloków
+- Odczytywanie/zapisywanie niew³a¶ciwych obszarów na stosie
+- Wycieki pamiêci -- gdy wska¼niki do zaalokowanych bloków s± stracone na
+  zawsze
+- Przekazywanie niezainicjalizowanej i/lub nieadresowalnej pamiêci do
+  odwo³añ systemowych
+- Niekonsekwencja w u¿ywaniu malloc/new/new [] kontra free/delete/delete []
+- Niektóre nadu¿ycie API POSIX pthreads
 
 %prep
 %setup -q
