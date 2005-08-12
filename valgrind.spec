@@ -2,19 +2,19 @@
 Summary:	An open-source memory debugger for x86-GNU/Linux
 Summary(pl):	Otwarty odpluskwiacz pamiêci dla Linuksa x86
 Name:		valgrind
-Version:	2.4.0
+Version:	3.0.0
 Release:	1
 License:	GPL
 Group:		Development/Tools
 Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
-# Source0-md5:	1d0bd81d368789946d32d18a468ea0cf
+# Source0-md5:	e976a343c61d9505162f595a8aeb09c1
 URL:		http://valgrind.org/
 BuildRequires:	autoconf
 BuildRequires:	automake
 # Needs libc.a
 BuildRequires:	glibc-static
 Conflicts:	valgrind-calltree
-ExclusiveArch:	%{ix86}
+ExclusiveArch:	%{ix86} %{x8664}
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 # Valgrind binaries should _never_ be stripped
@@ -65,8 +65,9 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(644,root,root,755)
-%doc ACKNOWLEDGEMENTS AUTHORS FAQ.txt NEWS README README_MISSING_SYSCALL_OR_IOCTL TODO
-%doc $RPM_BUILD_ROOT%{_docdir}/valgrind/*.html
+%doc ACKNOWLEDGEMENTS AUTHORS FAQ.txt NEWS README README_MISSING_SYSCALL_OR_IOCTL
+%doc $RPM_BUILD_ROOT%{_docdir}/valgrind/html
+%doc $RPM_BUILD_ROOT%{_docdir}/valgrind/valgrind_manual.pdf
 %attr(755,root,root) %{_bindir}/*
 %dir %{_libdir}/%{name}
 %attr(755,root,root) %{_libdir}/%{name}/*.so
