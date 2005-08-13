@@ -8,6 +8,7 @@ License:	GPL
 Group:		Development/Tools
 Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
 # Source0-md5:	e976a343c61d9505162f595a8aeb09c1
+Patch0:		%{name}-repret.patch
 URL:		http://valgrind.org/
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -42,6 +43,7 @@ profilowanie, dziêki któremu programy zaczn± szybciej pracowaæ.
 
 %prep
 %setup -q
+%patch0 -p0
 
 %build
 %{__aclocal}
