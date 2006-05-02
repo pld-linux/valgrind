@@ -13,7 +13,7 @@ BuildRequires:	automake
 # Needs libc.a
 BuildRequires:	glibc-static
 Conflicts:	valgrind-calltree
-ExclusiveArch:	%{ix86} %{x8664} ppc
+ExclusiveArch:	%{ix86} ppc
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %define		_noautostrip	.*/vgpreload.*\\.so
