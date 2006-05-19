@@ -1,22 +1,28 @@
+# Conditional build:
+%bcond_with	multilib	# enable multilib on amd64
+#
 Summary:	An open-source memory debugger
 Summary(pl):	Otwarty odpluskwiacz pamiêci
 Name:		valgrind
 Version:	3.1.1
-Release:	1
+Release:	2
 License:	GPL
 Group:		Development/Tools
 Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
 # Source0-md5:	3bbfafedb59c19bf75977381ce2eb6d7
+Patch0:		%{name}-amd64.patch
 URL:		http://valgrind.org/
 BuildRequires:	autoconf
 BuildRequires:	automake
 # Needs libc.a
 BuildRequires:	glibc-static
 Conflicts:	valgrind-calltree
-ExclusiveArch:	%{ix86} ppc
+ExclusiveArch:	%{ix86} ppc %{x8664}
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %define		_noautostrip	.*/vgpreload.*\\.so
+# ld portion broken
+%undefine	with_ccache
 
 %description
 Valgrind is a GPL'd system for debugging and profiling Linux programs.
@@ -35,6 +41,7 @@ dok³adne profilowanie, dziêki któremu programy zaczn± szybciej pracowaæ.
 
 %prep
 %setup -q
+%{!?with_multilib:%patch0 -p1}
 
 %build
 %{__aclocal}
@@ -52,6 +59,8 @@ rm -rf $RPM_BUILD_ROOT
 	DESTDIR=$RPM_BUILD_ROOT
 
 strip $RPM_BUILD_ROOT%{_libdir}/%{name}/hp2ps
+rm -rf _docs
+mv $RPM_BUILD_ROOT%{_docdir}/valgrind _docs
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -59,8 +68,8 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(644,root,root,755)
 %doc ACKNOWLEDGEMENTS AUTHORS FAQ.txt NEWS README README_MISSING_SYSCALL_OR_IOCTL
-%doc $RPM_BUILD_ROOT%{_docdir}/valgrind/html
-%doc $RPM_BUILD_ROOT%{_docdir}/valgrind/valgrind_manual.pdf
+%doc _docs/html
+%doc _docs/valgrind_manual.pdf
 %attr(755,root,root) %{_bindir}/*
 %dir %{_libdir}/%{name}
 %dir %{_libdir}/%{name}/*-linux
