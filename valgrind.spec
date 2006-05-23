@@ -1,6 +1,9 @@
 # Conditional build:
 %bcond_with	multilib	# enable multilib on amd64
 #
+
+%define		_binary_payload		w9.lzdio
+
 Summary:	An open-source memory debugger
 Summary(pl):	Otwarty odpluskwiacz pamiêci
 Name:		valgrind
