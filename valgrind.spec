@@ -19,6 +19,7 @@ BuildRequires:	autoconf
 BuildRequires:	automake
 # Needs libc.a
 BuildRequires:	glibc-static
+BuildRequires:	rpm-build >= 4.4.6-1.6
 Conflicts:	valgrind-calltree
 ExclusiveArch:	%{ix86} ppc %{x8664}
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
@@ -45,6 +46,8 @@ dok³adne profilowanie, dziêki któremu programy zaczn± szybciej pracowaæ.
 %prep
 %setup -q
 %{!?with_multilib:%patch0 -p1}
+
+exit 1
 
 %build
 %{__aclocal}
