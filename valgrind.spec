@@ -18,8 +18,7 @@ BuildRequires:	automake
 BuildRequires:	glibc-static
 Obsoletes:	valgrind-callgrind
 Obsoletes:	valgrind-calltree
-# ppc64 was added
-ExclusiveArch:	%{ix86} ppc %{x8664}
+ExclusiveArch:	%{ix86} %{x8664} ppc ppc64
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %define		_noautostrip	.*/vgpreload.*\\.so
