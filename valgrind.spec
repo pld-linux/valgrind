@@ -2,7 +2,7 @@
 %bcond_with	multilib	# enable multilib on amd64
 #
 Summary:	An open-source memory debugger
-Summary(pl):	Otwarty odpluskwiacz pamiêci
+Summary(pl.UTF-8):   Otwarty odpluskwiacz pamiÄ™ci
 Name:		valgrind
 Version:	3.2.3
 Release:	1
@@ -33,13 +33,13 @@ many memory management and threading bugs, avoiding hours of frustrating
 bug-hunting, making your programs more stable. You can also perform
 detailed profiling to help speed up your programs.
 
-%description -l pl
-Valgrind jest systemem s³u¿±cym do odpluskwiania i profilowania
-programów na Linuksie. U¿ywaj±c dostarczanych z nim narzêdzi mo¿na
-automatycznie wykrywaæ wiele b³êdów zwi±zanych z zarz±dzaniem pamiêci± i
-w±tkowaniem, dziêki czemu unika siê frustruj±cego polowania na b³êdy, a
-tak¿e czyni siê programy bardziej stabilnymi. Mo¿liwe jest równie¿
-dok³adne profilowanie, dziêki któremu programy zaczn± szybciej pracowaæ.
+%description -l pl.UTF-8
+Valgrind jest systemem sÅ‚uÅ¼Ä…cym do odpluskwiania i profilowania
+programÃ³w na Linuksie. UÅ¼ywajÄ…c dostarczanych z nim narzÄ™dzi moÅ¼na
+automatycznie wykrywaÄ‡ wiele bÅ‚Ä™dÃ³w zwiÄ…zanych z zarzÄ…dzaniem pamiÄ™ciÄ… i
+wÄ…tkowaniem, dziÄ™ki czemu unika siÄ™ frustrujÄ…cego polowania na bÅ‚Ä™dy, a
+takÅ¼e czyni siÄ™ programy bardziej stabilnymi. MoÅ¼liwe jest rÃ³wnieÅ¼
+dokÅ‚adne profilowanie, dziÄ™ki ktÃ³remu programy zacznÄ… szybciej pracowaÄ‡.
 
 %prep
 %setup -q
