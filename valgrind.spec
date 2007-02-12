@@ -2,7 +2,7 @@
 %bcond_with	multilib	# enable multilib on amd64
 #
 Summary:	An open-source memory debugger
-Summary(pl.UTF-8):   Otwarty odpluskwiacz pamięci
+Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
 Version:	3.2.3
 Release:	1
