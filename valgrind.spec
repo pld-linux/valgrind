@@ -1,17 +1,13 @@
-# Conditional build:
-%bcond_with	multilib	# enable multilib on amd64
-#
 Summary:	An open-source memory debugger
 Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
 Version:	3.2.3
-Release:	1
+Release:	2
 License:	GPL
 Group:		Development/Tools
 Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
 # Source0-md5:	978847992b136c8d8cb5c6559a91df1c
-Patch0:		%{name}-amd64.patch
-Patch1:		%{name}-nop.patch
+Patch0:		%{name}-debuginfo.patch
 URL:		http://valgrind.org/
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -43,8 +39,7 @@ dokładne profilowanie, dzięki któremu programy zaczną szybciej pracować.
 
 %prep
 %setup -q
-#%{!?with_multilib:%patch0 -p1}
-#%patch1 -p0
+%patch0 -p1
 
 %build
 %{__aclocal}
