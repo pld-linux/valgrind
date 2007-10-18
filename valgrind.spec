@@ -8,7 +8,7 @@ Group:		Development/Tools
 Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
 # Source0-md5:	978847992b136c8d8cb5c6559a91df1c
 Patch0:		%{name}-debuginfo.patch
-Patch1:     %{name}-glibc2.6.patch
+Patch1:		%{name}-glibc2.6.patch
 URL:		http://valgrind.org/
 BuildRequires:	autoconf
 BuildRequires:	automake
