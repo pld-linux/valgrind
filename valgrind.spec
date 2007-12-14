@@ -1,16 +1,13 @@
 Summary:	An open-source memory debugger
 Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
-Version:	3.2.3
-Release:	4
+Version:	3.3.0
+Release:	0.1
 License:	GPL
 Group:		Development/Tools
 Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
-# Source0-md5:	978847992b136c8d8cb5c6559a91df1c
+# Source0-md5:	e5fc39755a714f36b7e5014c1c6d4748
 Patch0:		%{name}-debuginfo.patch
-Patch1:		%{name}-glibc2.6.patch
-# the same as glibc 2.6 for now
-Patch2:		%{name}-glibc2.7.patch
 URL:		http://valgrind.org/
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -43,8 +40,6 @@ dokładne profilowanie, dzięki któremu programy zaczną szybciej pracować.
 %prep
 %setup -q
 %patch0 -p1
-%patch1 -p1
-%patch2 -p1
 
 sed -i -e 's:^CFLAGS="-Wno-long-long":CFLAGS="$CFLAGS -Wno-long-long":' configure.in
 
@@ -66,7 +61,6 @@ rm -rf $RPM_BUILD_ROOT
 %{__make} install \
 	DESTDIR=$RPM_BUILD_ROOT
 
-strip $RPM_BUILD_ROOT%{_libdir}/%{name}/hp2ps
 rm -rf _docs
 mv $RPM_BUILD_ROOT%{_docdir}/valgrind _docs
 
@@ -82,7 +76,6 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/%{name}
 %dir %{_libdir}/%{name}/*-linux
 %attr(755,root,root) %{_libdir}/%{name}/*-linux/*
-%attr(755,root,root) %{_libdir}/%{name}/hp2ps
 %{_libdir}/%{name}/*.supp
 %{_includedir}/*
 %{_pkgconfigdir}/*.pc
