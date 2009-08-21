@@ -1,18 +1,19 @@
 Summary:	An open-source memory debugger
 Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
-Version:	3.4.1
+Version:	3.5.0
 Release:	1
 License:	GPL
 Group:		Development/Tools
 Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
-# Source0-md5:	b5f039dd2271aaf9ae570ab4116f87c7
+# Source0-md5:	f03522a4687cf76c676c9494fcc0a517
 Patch0:		%{name}-debuginfo.patch
 URL:		http://valgrind.org/
 BuildRequires:	autoconf
 BuildRequires:	automake
 # Needs libc.a
 BuildRequires:	glibc-static
+BuildRequires:	libgomp-devel
 Obsoletes:	valgrind-callgrind
 Obsoletes:	valgrind-calltree
 ExclusiveArch:	%{ix86} %{x8664} ppc ppc64
@@ -49,6 +50,7 @@ sed -i -e 's:^CFLAGS="-Wno-long-long":CFLAGS="$CFLAGS -Wno-long-long":' configur
 %{__autoconf}
 %{__automake}
 %configure \
+	--enable-tls \
 %if %{_lib} != "lib"
 	--enable-only64bit \
 %endif
@@ -74,9 +76,10 @@ rm -rf $RPM_BUILD_ROOT
 %doc _docs/valgrind_manual.pdf
 %attr(755,root,root) %{_bindir}/*
 %dir %{_libdir}/%{name}
-%dir %{_libdir}/%{name}/*-linux
-%attr(755,root,root) %{_libdir}/%{name}/*-linux/*
+%attr(755,root,root) %{_libdir}/%{name}/*-linux
+%attr(755,root,root) %{_libdir}/%{name}/*.so
 %{_libdir}/%{name}/*.supp
+%{_libdir}/%{name}/*.a
 %{_includedir}/*
 %{_pkgconfigdir}/*.pc
 %{_mandir}/man1/*.1*
