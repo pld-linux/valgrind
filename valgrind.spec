@@ -8,6 +8,7 @@ Group:		Development/Tools
 Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
 # Source0-md5:	f03522a4687cf76c676c9494fcc0a517
 Patch0:		%{name}-debuginfo.patch
+Patch1:		%{name}-glibc211.patch
 URL:		http://valgrind.org/
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -41,6 +42,7 @@ dokładne profilowanie, dzięki któremu programy zaczną szybciej pracować.
 %prep
 %setup -q
 %patch0 -p1
+%patch1 -p1
 
 sed -i -e 's:^CFLAGS="-Wno-long-long":CFLAGS="$CFLAGS -Wno-long-long":' configure.in
 
