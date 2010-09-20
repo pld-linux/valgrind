@@ -1,14 +1,17 @@
+#
+%define		_snap	11368
+#
 Summary:	An open-source memory debugger
 Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
-Version:	3.5.0
-Release:	2
+Version:	3.5.0.%{_snap}
+Release:	1
 License:	GPL
 Group:		Development/Tools
-Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
-# Source0-md5:	f03522a4687cf76c676c9494fcc0a517
+#Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
+Source0:	%{name}-%{_snap}.tar.xz
+# Source0-md5:	3911019ad90a13c914f77148a7fef95d
 Patch0:		%{name}-debuginfo.patch
-Patch1:		%{name}-glibc211.patch
 URL:		http://valgrind.org/
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -40,9 +43,8 @@ także czyni się programy bardziej stabilnymi. Możliwe jest również
 dokładne profilowanie, dzięki któremu programy zaczną szybciej pracować.
 
 %prep
-%setup -q
+%setup -q -n %{name}-%{_snap}
 %patch0 -p1
-%patch1 -p1
 
 sed -i -e 's:^CFLAGS="-Wno-long-long":CFLAGS="$CFLAGS -Wno-long-long":' configure.in
 
@@ -65,17 +67,14 @@ rm -rf $RPM_BUILD_ROOT
 %{__make} install \
 	DESTDIR=$RPM_BUILD_ROOT
 
-rm -rf _docs
-mv $RPM_BUILD_ROOT%{_docdir}/valgrind _docs
-
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(644,root,root,755)
-%doc AUTHORS FAQ.txt NEWS README README_MISSING_SYSCALL_OR_IOCTL
-%doc _docs/html
-%doc _docs/valgrind_manual.pdf
+%doc AUTHORS NEWS README README_MISSING_SYSCALL_OR_IOCTL
+#%doc _docs/html
+#%doc _docs/valgrind_manual.pdf
 %attr(755,root,root) %{_bindir}/*
 %dir %{_libdir}/%{name}
 %attr(755,root,root) %{_libdir}/%{name}/*-linux
@@ -84,4 +83,3 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/%{name}/*.a
 %{_includedir}/*
 %{_pkgconfigdir}/*.pc
-%{_mandir}/man1/*.1*
