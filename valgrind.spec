@@ -2,7 +2,7 @@ Summary:	An open-source memory debugger
 Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
 Version:	3.6.0
-Release:	1
+Release:	2
 License:	GPL
 Group:		Development/Tools
 Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
@@ -50,12 +50,15 @@ sed -i -e 's:^CFLAGS="-Wno-long-long":CFLAGS="$CFLAGS -Wno-long-long":' configur
 %{__autoheader}
 %{__autoconf}
 %{__automake}
+
+ac_cv_path_GDB=/usr/bin/gdb \
 %configure \
 	--enable-tls \
 %if %{_lib} != "lib"
 	--enable-only64bit \
 %endif
 	LDFLAGS="" # no strip!
+
 %{__make}
 
 %install
