@@ -1,16 +1,16 @@
+# TODO:
+# - fix CC detection in configure, so CC=gcc won't be needed
 Summary:	An open-source memory debugger
 Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
-Version:	3.6.1
-Release:	2
+Version:	3.7.0
+Release:	1
 License:	GPL
 Group:		Development/Tools
 Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
-# Source0-md5:	2c3aa122498baecc9d69194057ca88f5
+# Source0-md5:	a855fda56edf05614f099dca316d1775
 Patch0:		%{name}-debuginfo.patch
 Patch1:		%{name}-native-cpuid.patch
-Patch2:		%{name}-opge.patch
-Patch3:		%{name}-glibc214.patch
 URL:		http://valgrind.org/
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -46,8 +46,6 @@ pracować.
 %setup -q
 %patch0
 %patch1 -p1
-%patch2 -p1
-%patch3 -p1
 
 sed -i -e 's:^CFLAGS="-Wno-long-long":CFLAGS="$CFLAGS -Wno-long-long":' configure.in
 
@@ -59,6 +57,7 @@ sed -i -e 's:^CFLAGS="-Wno-long-long":CFLAGS="$CFLAGS -Wno-long-long":' configur
 
 ac_cv_path_GDB=/usr/bin/gdb \
 %configure \
+	CC=gcc \
 	--enable-tls \
 %if %{_lib} != "lib"
 	--enable-only64bit \
@@ -91,5 +90,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/%{name}/*.a
 %attr(755,root,root) %{_libdir}/%{name}/*.so
 %{_libdir}/%{name}/*.supp
+%{_libdir}/%{name}/*.xml
 %{_mandir}/man1/*.1*
 %{_pkgconfigdir}/*.pc
