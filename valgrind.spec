@@ -14,12 +14,14 @@ Patch1:		%{name}-native-cpuid.patch
 URL:		http://valgrind.org/
 BuildRequires:	autoconf
 BuildRequires:	automake
+BuildRequires:	gcc >= 5:3.0
 # Needs libc.a
 BuildRequires:	glibc-static
 BuildRequires:	libgomp-devel
+BuildRequires:	libstdc++-devel
 Obsoletes:	valgrind-callgrind
 Obsoletes:	valgrind-calltree
-ExclusiveArch:	%{ix86} %{x8664} ppc ppc64
+ExclusiveArch:	%{ix86} %{x8664} arm ppc ppc64 s390x
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %define		_noautostrip	.*/vgpreload.*\\.so
@@ -72,7 +74,7 @@ rm -rf $RPM_BUILD_ROOT
 %{__make} install \
 	DESTDIR=$RPM_BUILD_ROOT
 
-rm -rf $RPM_BUILD_ROOT/%{_datadir}/doc
+%{__rm} -r $RPM_BUILD_ROOT%{_datadir}/doc
 mv docs/index.pdf docs/valgrind_manual.pdf
 mv docs/index.ps docs/valgrind_manual.ps
 
@@ -83,13 +85,25 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(644,root,root,755)
 %doc AUTHORS NEWS README README_MISSING_SYSCALL_OR_IOCTL
 %doc docs/html docs/valgrind_manual.pdf docs/valgrind_manual.ps
-%attr(755,root,root) %{_bindir}/*
-%{_includedir}/*
+%attr(755,root,root) %{_bindir}/callgrind_annotate
+%attr(755,root,root) %{_bindir}/callgrind_control
+%attr(755,root,root) %{_bindir}/cg_annotate
+%attr(755,root,root) %{_bindir}/cg_diff
+%attr(755,root,root) %{_bindir}/cg_merge
+%attr(755,root,root) %{_bindir}/ms_print
+%attr(755,root,root) %{_bindir}/valgrind
+%attr(755,root,root) %{_bindir}/valgrind-listener
+%attr(755,root,root) %{_bindir}/vgdb
 %dir %{_libdir}/%{name}
 %attr(755,root,root) %{_libdir}/%{name}/*-linux
-%{_libdir}/%{name}/*.a
-%attr(755,root,root) %{_libdir}/%{name}/*.so
-%{_libdir}/%{name}/*.supp
+%attr(755,root,root) %{_libdir}/%{name}/vgpreload_*-linux.so
 %{_libdir}/%{name}/*.xml
-%{_mandir}/man1/*.1*
-%{_pkgconfigdir}/*.pc
+%{_libdir}/%{name}/default.supp
+%{_libdir}/%{name}/lib*-linux.a
+%{_includedir}/valgrind
+%{_mandir}/man1/callgrind_annotate.1*
+%{_mandir}/man1/callgrind_control.1*
+%{_mandir}/man1/cg_annotate.1*
+%{_mandir}/man1/ms_print.1*
+%{_mandir}/man1/valgrind.1*
+%{_pkgconfigdir}/valgrind.pc
