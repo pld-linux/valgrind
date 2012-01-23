@@ -12,6 +12,7 @@ Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
 Patch0:		%{name}-debuginfo.patch
 Patch1:		%{name}-native-cpuid.patch
 Patch2:		%{name}-automake-1.11.2.patch
+Patch3:		%{name}-ld_linux_strlen.patch
 URL:		http://valgrind.org/
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -52,6 +53,7 @@ pracować.
 %patch0
 %patch1 -p1
 %patch2 -p0
+%patch3 -p1
 
 sed -i -e 's:^CFLAGS="-Wno-long-long":CFLAGS="$CFLAGS -Wno-long-long":' configure.in
 

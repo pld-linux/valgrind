@@ -1,0 +1,11 @@
+--- valgrind-3.7.0/coregrind/m_redir.c.orig	2012-01-23 12:29:24.000000000 +0100
++++ valgrind-3.7.0/coregrind/m_redir.c	2012-01-23 12:29:47.000000000 +0100
+@@ -1082,7 +1082,7 @@
+          (Addr)&VG_(x86_linux_REDIR_FOR_index), mandatory);
+       add_hardwired_spec(
+          "ld-linux.so.2", "strlen",
+-         (Addr)&VG_(x86_linux_REDIR_FOR_strlen), mandatory);
++         (Addr)&VG_(x86_linux_REDIR_FOR_strlen), NULL);
+    }
+ 
+ #  elif defined(VGP_amd64_linux)
