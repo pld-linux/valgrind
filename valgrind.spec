@@ -20,7 +20,7 @@ BuildRequires:	automake
 BuildRequires:	gcc >= 5:3.0
 # Needs libc.a
 BuildRequires:	glibc-devel >= 6:2.2
-BuildRequires:	glibc-devel < 6:2.16
+BuildRequires:	glibc-devel < 6:2.17
 BuildRequires:	glibc-static
 BuildRequires:	libgomp-devel
 BuildRequires:	libstdc++-devel
