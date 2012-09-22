@@ -3,22 +3,20 @@
 Summary:	An open-source memory debugger
 Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
-Version:	3.8.0
+Version:	3.8.1
 Release:	1
 License:	GPL
 Group:		Development/Tools
 Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
-# Source0-md5:	ec04dfd1256307432b2a7b520398c526
+# Source0-md5:	288758010b271119a0ffc0183f1d6e38
 Patch0:		%{name}-native-cpuid.patch
 Patch1:		%{name}-ld_linux_strlen.patch
 URL:		http://valgrind.org/
 BuildRequires:	autoconf
 BuildRequires:	automake
 BuildRequires:	gcc >= 5:3.0
-# Needs libc.a
 BuildRequires:	glibc-devel >= 6:2.2
 BuildRequires:	glibc-devel < 6:2.17
-BuildRequires:	glibc-static
 BuildRequires:	libgomp-devel
 BuildRequires:	libstdc++-devel
 Obsoletes:	valgrind-callgrind
