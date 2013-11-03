@@ -3,12 +3,12 @@
 Summary:	An open-source memory debugger
 Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
-Version:	3.8.1
-Release:	3
+Version:	3.9.0
+Release:	1
 License:	GPL
 Group:		Development/Tools
 Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
-# Source0-md5:	288758010b271119a0ffc0183f1d6e38
+# Source0-md5:	0947de8112f946b9ce64764af7be6df2
 Patch0:		%{name}-native-cpuid.patch
 Patch1:		%{name}-ld_linux_strlen.patch
 URL:		http://valgrind.org/
@@ -16,7 +16,7 @@ BuildRequires:	autoconf
 BuildRequires:	automake
 BuildRequires:	gcc >= 5:3.0
 BuildRequires:	glibc-devel >= 6:2.2
-BuildRequires:	glibc-devel < 6:2.17
+BuildRequires:	glibc-devel < 6:2.19
 BuildRequires:	libgomp-devel
 BuildRequires:	libstdc++-devel
 Obsoletes:	valgrind-callgrind
@@ -49,7 +49,7 @@ pracować.
 %patch0 -p1
 %patch1 -p1
 
-sed -i -e 's:^CFLAGS="-Wno-long-long":CFLAGS="$CFLAGS -Wno-long-long":' configure.in
+sed -i -e 's:^CFLAGS="-Wno-long-long":CFLAGS="$CFLAGS -Wno-long-long":' configure.ac
 
 %build
 %{__aclocal}
@@ -75,8 +75,8 @@ rm -rf $RPM_BUILD_ROOT
 	DESTDIR=$RPM_BUILD_ROOT
 
 %{__rm} -r $RPM_BUILD_ROOT%{_datadir}/doc
-mv docs/index.pdf docs/valgrind_manual.pdf
-mv docs/index.ps docs/valgrind_manual.ps
+cp -p docs/index.pdf docs/valgrind_manual.pdf
+cp -p docs/index.ps docs/valgrind_manual.ps
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -92,6 +92,7 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755,root,root) %{_bindir}/cg_merge
 %attr(755,root,root) %{_bindir}/ms_print
 %attr(755,root,root) %{_bindir}/valgrind
+%attr(755,root,root) %{_bindir}/valgrind-di-server
 %attr(755,root,root) %{_bindir}/valgrind-listener
 %attr(755,root,root) %{_bindir}/vgdb
 %dir %{_libdir}/%{name}
@@ -104,6 +105,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/callgrind_annotate.1*
 %{_mandir}/man1/callgrind_control.1*
 %{_mandir}/man1/cg_annotate.1*
+%{_mandir}/man1/cg_diff.1*
+%{_mandir}/man1/cg_merge.1*
 %{_mandir}/man1/ms_print.1*
 %{_mandir}/man1/valgrind.1*
+%{_mandir}/man1/valgrind-listener.1*
+%{_mandir}/man1/vgdb.1*
 %{_pkgconfigdir}/valgrind.pc
