@@ -1,25 +1,31 @@
 # TODO:
 # - fix CC detection in configure, so CC=gcc won't be needed
+#
+# Conditional build:
+%bcond_with	mpi	# MPI wrapper module
+#
 Summary:	An open-source memory debugger
 Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
 Version:	3.10.1
 Release:	1
-License:	GPL
+License:	GPL v2+
 Group:		Development/Tools
 Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
 # Source0-md5:	60ddae962bc79e7c95cfc4667245707f
 Patch0:		%{name}-native-cpuid.patch
 Patch1:		%{name}-ld_linux_strlen.patch
+Patch2:		%{name}-glibc.patch
 URL:		http://valgrind.org/
-BuildRequires:	autoconf
-BuildRequires:	automake
+BuildRequires:	autoconf >= 2.50
+BuildRequires:	automake >= 1:1.10
 BuildRequires:	gcc >= 5:3.0
 # check in configure.ac:882 AC_MSG_CHECKING([the GLIBC_VERSION version])
 BuildRequires:	glibc-devel >= 6:2.2
-BuildRequires:	glibc-devel <= 6:2.19
+BuildRequires:	glibc-devel < 6:2.22
 BuildRequires:	libgomp-devel
 BuildRequires:	libstdc++-devel
+%{?with_mpi:BuildRequires:	mpi-devel}
 Obsoletes:	valgrind-callgrind
 Obsoletes:	valgrind-calltree
 ExclusiveArch:	%{ix86} %{x8664} arm ppc ppc64 s390x
@@ -49,13 +55,14 @@ pracować.
 %setup -q
 %patch0 -p1
 %patch1 -p1
+%patch2 -p1
 
 sed -i -e 's:^CFLAGS="-Wno-long-long":CFLAGS="$CFLAGS -Wno-long-long":' configure.ac
 
 %build
 %{__aclocal}
-%{__autoheader}
 %{__autoconf}
+%{__autoheader}
 %{__automake}
 
 ac_cv_path_GDB=/usr/bin/gdb \
@@ -99,6 +106,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/%{name}
 %attr(755,root,root) %{_libdir}/%{name}/*-linux
 %attr(755,root,root) %{_libdir}/%{name}/vgpreload_*-linux.so
+%if %{with mpi}
+# TODO: subpackage?
+%attr(755,root,root) %{_libdir}/%{name}/libmpiwrap-*-linux.so
+%endif
 %{_libdir}/%{name}/*.xml
 %{_libdir}/%{name}/default.supp
 %{_libdir}/%{name}/lib*-linux.a
