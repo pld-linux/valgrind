@@ -8,7 +8,7 @@ Summary:	An open-source memory debugger
 Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
 Version:	3.10.1
-Release:	1
+Release:	2
 License:	GPL v2+
 Group:		Development/Tools
 Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
@@ -16,6 +16,7 @@ Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
 Patch0:		%{name}-native-cpuid.patch
 Patch1:		%{name}-ld_linux_strlen.patch
 Patch2:		%{name}-glibc.patch
+Patch3:		kernel-4.x.patch
 URL:		http://valgrind.org/
 BuildRequires:	autoconf >= 2.50
 BuildRequires:	automake >= 1:1.10
@@ -28,7 +29,7 @@ BuildRequires:	libstdc++-devel
 %{?with_mpi:BuildRequires:	mpi-devel}
 Obsoletes:	valgrind-callgrind
 Obsoletes:	valgrind-calltree
-ExclusiveArch:	%{ix86} %{x8664} arm ppc ppc64 s390x
+ExclusiveArch:	%{ix86} %{x8664} arm ppc ppc64 s390x x32
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %define		_noautostrip	.*/vgpreload.*\\.so
@@ -56,6 +57,7 @@ pracować.
 %patch0 -p1
 %patch1 -p1
 %patch2 -p1
+%patch3 -p1
 
 sed -i -e 's:^CFLAGS="-Wno-long-long":CFLAGS="$CFLAGS -Wno-long-long":' configure.ac
 
