@@ -7,16 +7,14 @@
 Summary:	An open-source memory debugger
 Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
-Version:	3.10.1
-Release:	2
+Version:	3.11.0
+Release:	1
 License:	GPL v2+
 Group:		Development/Tools
 Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
-# Source0-md5:	60ddae962bc79e7c95cfc4667245707f
+# Source0-md5:	4ea62074da73ae82e0162d6550d3f129
 Patch0:		%{name}-native-cpuid.patch
 Patch1:		%{name}-ld_linux_strlen.patch
-Patch2:		%{name}-glibc.patch
-Patch3:		kernel-4.x.patch
 URL:		http://valgrind.org/
 BuildRequires:	autoconf >= 2.50
 BuildRequires:	automake >= 1:1.10
@@ -33,6 +31,7 @@ ExclusiveArch:	%{ix86} %{x8664} arm ppc ppc64 s390x x32
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %define		_noautostrip	.*/vgpreload.*\\.so
+%define		filterout_c	-fstack-protector-strong
 # ld portion broken
 %undefine	with_ccache
 
@@ -56,8 +55,6 @@ pracować.
 %setup -q
 %patch0 -p1
 %patch1 -p1
-%patch2 -p1
-%patch3 -p1
 
 sed -i -e 's:^CFLAGS="-Wno-long-long":CFLAGS="$CFLAGS -Wno-long-long":' configure.ac
 

@@ -10,14 +10,12 @@ diff -uNr valgrind-3.6.0.orig/coregrind/m_main.c valgrind-3.6.0/coregrind/m_main
  
        else if VG_INT_CLO(arg, "--log-fd", tmp_log_fd) {
           log_to = VgLogTo_Fd;
-diff -uNr valgrind-3.6.0.orig/VEX/priv/guest_amd64_defs.h valgrind-3.6.0/VEX/priv/guest_amd64_defs.h
---- valgrind-3.6.0.orig/VEX/priv/guest_amd64_defs.h	2010-10-20 22:19:51.000000000 +0200
-+++ valgrind-3.6.0/VEX/priv/guest_amd64_defs.h	2011-01-17 20:38:57.815124615 +0100
-@@ -161,7 +161,8 @@
- extern void  amd64g_dirtyhelper_CPUID_baseline ( VexGuestAMD64State* st );
- extern void  amd64g_dirtyhelper_CPUID_sse3_and_cx16 ( VexGuestAMD64State* st );
+--- valgrind-3.11.0/VEX/priv/guest_amd64_defs.h.orig	2015-11-15 19:07:11.062949101 +0100
++++ valgrind-3.11.0/VEX/priv/guest_amd64_defs.h	2015-11-15 19:09:09.992944110 +0100
+@@ -169,6 +169,7 @@
  extern void  amd64g_dirtyhelper_CPUID_sse42_and_cx16 ( VexGuestAMD64State* st );
  extern void  amd64g_dirtyhelper_CPUID_avx_and_cx16 ( VexGuestAMD64State* st );
+ extern void  amd64g_dirtyhelper_CPUID_avx2 ( VexGuestAMD64State* st );
 +extern void  amd64g_dirtyhelper_CPUID_native ( VexGuestAMD64State* st );
  
  extern void  amd64g_dirtyhelper_FINIT ( VexGuestAMD64State* );
@@ -46,13 +44,12 @@ diff -uNr valgrind-3.6.0.orig/VEX/priv/guest_amd64_helpers.c valgrind-3.6.0/VEX/
  ULong amd64g_calculate_RCR ( ULong arg, 
                               ULong rot_amt, 
                               ULong rflags_in, 
-diff -uNr valgrind-3.6.0.orig/VEX/priv/guest_amd64_toIR.c valgrind-3.6.0/VEX/priv/guest_amd64_toIR.c
---- valgrind-3.6.0.orig/VEX/priv/guest_amd64_toIR.c	2011-01-17 20:35:34.380376775 +0100
-+++ valgrind-3.6.0/VEX/priv/guest_amd64_toIR.c	2011-01-17 20:36:00.891571709 +0100
-@@ -21165,6 +21165,10 @@ Long dis_ESC_0F (
-       const HChar*   fName = NULL;
-       void*    fAddr = NULL;
+--- valgrind-3.11.0/VEX/priv/guest_amd64_toIR.c.orig	2015-11-15 19:07:11.129615765 +0100
++++ valgrind-3.11.0/VEX/priv/guest_amd64_toIR.c	2015-11-15 19:13:47.379599136 +0100
+@@ -21920,6 +21920,10 @@
+ 
        if (haveF2orF3(pfx)) goto decode_failure;
+ 
 +      if (vex_control.iropt_native_cpuid) {
 +         fName = "amd64g_dirtyhelper_CPUID_native";
 +         fAddr = &amd64g_dirtyhelper_CPUID_native;
