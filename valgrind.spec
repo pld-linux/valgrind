@@ -19,9 +19,11 @@ URL:		http://valgrind.org/
 BuildRequires:	autoconf >= 2.50
 BuildRequires:	automake >= 1:1.10
 BuildRequires:	gcc >= 5:3.0
+%ifarch x32
+BuildRequires:	gcc-multilib-64 >= 5:3.0
+%endif
 # check in configure.ac:882 AC_MSG_CHECKING([the GLIBC_VERSION version])
 BuildRequires:	glibc-devel >= 6:2.2
-BuildRequires:	glibc-devel < 6:2.22
 BuildRequires:	libgomp-devel
 BuildRequires:	libstdc++-devel
 %{?with_mpi:BuildRequires:	mpi-devel}
