@@ -1,0 +1,974 @@
+commit 13693666bd9fc7be37a907302e5d3d4f4b2c9358
+Author: mjw <mjw@a5019735-40e9-0310-863c-91ae7b9d1cf9>
+Date:   Sun Nov 15 16:50:43 2015 +0000
+
+    BZ#355188 valgrind should intercept all malloc related global functions.
+    
+    This implements the interception of all globally public allocation
+    functions by default. It works by adding a flag to the spec to say the
+    interception only applies to global functions. Which is set for the
+    somalloc spec. The librarypath to match is set to "*" unless the user
+    overrides it. Then each DiSym keeps track of whether the symbol is local
+    or global. For a spec which has isGlobal set only isGlobal symbols will
+    match.
+    
+    Note that because of padding to keep the addresses in DiSym aligned the
+    addition of the extra bool isGlobal doesn't actually grow the struct.
+    The comments explain how the struct could be made more compact on 32bit
+    systems, but this isn't as easy on 64bit systems. So I didn't try to do
+    that in this patch.
+    
+    For ELF symbols keeping track of which are global is trivial. For pdb I
+    had to guess and made only the "Public" symbols global. I don't know
+    how/if macho keeps track of global symbols or not. For now I just mark
+    all of them local (which just means things work as previously on platforms
+    that use machos, no non-system symbols are matches by default for somalloc
+    unless the user explicitly tells which library name to match).
+    
+    Included are two testcases for shared libraries (wrapmalloc) and staticly
+    linked (wrapmallocstatic) malloc/free overrides that depend on the new
+    default. One existing testcase (new_override) was adjusted to explicitly
+    not use the new somalloc default because it depends on a user defined
+    new implementation that has side-effects and should explicitly not be
+    intercepted.
+    
+    git-svn-id: svn://svn.valgrind.org/valgrind/trunk@15726 a5019735-40e9-0310-863c-91ae7b9d1cf9
+
+diff --git a/coregrind/m_debuginfo/debuginfo.c b/coregrind/m_debuginfo/debuginfo.c
+index 6f11cd2..4dc1129 100644
+--- a/coregrind/m_debuginfo/debuginfo.c
++++ b/coregrind/m_debuginfo/debuginfo.c
+@@ -4306,7 +4306,8 @@ void VG_(DebugInfo_syms_getidx) ( const DebugInfo *si,
+                                   /*OUT*/const HChar**   pri_name,
+                                   /*OUT*/const HChar***  sec_names,
+                                   /*OUT*/Bool*     isText,
+-                                  /*OUT*/Bool*     isIFunc )
++                                  /*OUT*/Bool*     isIFunc,
++                                  /*OUT*/Bool*     isGlobal )
+ {
+    vg_assert(idx >= 0 && idx < si->symtab_used);
+    if (avmas)     *avmas     = si->symtab[idx].avmas;
+@@ -4315,6 +4316,7 @@ void VG_(DebugInfo_syms_getidx) ( const DebugInfo *si,
+    if (sec_names) *sec_names = si->symtab[idx].sec_names;
+    if (isText)    *isText    = si->symtab[idx].isText;
+    if (isIFunc)   *isIFunc   = si->symtab[idx].isIFunc;
++   if (isGlobal)  *isGlobal  = si->symtab[idx].isGlobal;
+ }
+ 
+ 
+diff --git a/coregrind/m_debuginfo/priv_storage.h b/coregrind/m_debuginfo/priv_storage.h
+index aa1d9f9..a43720a 100644
+--- a/coregrind/m_debuginfo/priv_storage.h
++++ b/coregrind/m_debuginfo/priv_storage.h
+@@ -75,14 +75,18 @@ typedef
+                             the macros defined in pub_core_debuginfo.h */
+       const HChar*  pri_name;  /* primary name, never NULL */
+       const HChar** sec_names; /* NULL, or a NULL term'd array of other names */
+-      // XXX: this could be shrunk (on 32-bit platforms) by using 30
+-      // bits for the size and 1 bit each for isText and isIFunc.  If you
+-      // do this, make sure that all assignments to the latter two use
+-      // 0 or 1 (or True or False), and that a positive number larger
+-      // than 1 is never used to represent True.
++      // XXX: DiSym could be shrunk (on 32-bit platforms to exactly 16
++      // bytes, on 64-bit platforms the first 3 pointers already add
++      // up to 24 bytes, so size plus bits will extend to 32 bytes
++      // anyway) by using 29 bits for the size and 1 bit each for
++      // isText, isIFunc and isGlobal.  If you do this, make sure that
++      // all assignments to the latter two use 0 or 1 (or True or
++      // False), and that a positive number larger than 1 is never
++      // used to represent True.
+       UInt    size;    /* size in bytes */
+       Bool    isText;
+       Bool    isIFunc; /* symbol is an indirect function? */
++      Bool    isGlobal; /* Is this symbol globally visible? */
+    }
+    DiSym;
+ 
+diff --git a/coregrind/m_debuginfo/readelf.c b/coregrind/m_debuginfo/readelf.c
+index 0861725..3820965 100644
+--- a/coregrind/m_debuginfo/readelf.c
++++ b/coregrind/m_debuginfo/readelf.c
+@@ -241,7 +241,8 @@ Bool get_elf_symbol_info (
+         Bool*   from_opd_out,   /* ppc64be-linux only: did we deref an
+                                   .opd entry? */
+         Bool*   is_text_out,    /* is this a text symbol? */
+-        Bool*   is_ifunc        /* is this a  STT_GNU_IFUNC function ?*/
++        Bool*   is_ifunc_out,   /* is this a STT_GNU_IFUNC function ?*/
++        Bool*   is_global_out   /* is this a global symbol ?*/
+      )
+ {
+    Bool plausible;
+@@ -259,7 +260,8 @@ Bool get_elf_symbol_info (
+    SET_TOCPTR_AVMA(*sym_avmas_out, 0);   /* default to unknown/inapplicable */
+    SET_LOCAL_EP_AVMA(*sym_avmas_out, 0); /* default to unknown/inapplicable */
+    *from_opd_out      = False;
+-   *is_ifunc          = False;
++   *is_ifunc_out      = False;
++   *is_global_out     = False;
+ 
+    /* Get the symbol size, but restrict it to fit in a signed 32 bit
+       int.  Also, deal with the stupid case of negative size by making
+@@ -373,10 +375,14 @@ Bool get_elf_symbol_info (
+    /* Check for indirect functions. */
+    if (*is_text_out
+        && ELFXX_ST_TYPE(sym->st_info) == STT_GNU_IFUNC) {
+-       *is_ifunc = True;
++      *is_ifunc_out = True;
+    }
+ #  endif
+ 
++   if (ELFXX_ST_BIND(sym->st_info) == STB_GLOBAL) {
++      *is_global_out = True;
++   }
++
+ #  if defined(VGP_ppc64be_linux)
+    /* Allow STT_NOTYPE in the very special case where we're running on
+       ppc64be-linux and the symbol is one which the .opd-chasing hack
+@@ -777,6 +783,7 @@ void read_elf_symtab__normal(
+       SymAVMAs sym_avmas_really;
+       Int    sym_size = 0;
+       Bool   from_opd = False, is_text = False, is_ifunc = False;
++      Bool   is_global = False;
+       DiOffT sym_name_really = DiOffT_INVALID;
+       sym_avmas_really.main = 0;
+       SET_TOCPTR_AVMA(sym_avmas_really, 0);
+@@ -787,7 +794,7 @@ void read_elf_symtab__normal(
+                               &sym_name_really, 
+                               &sym_avmas_really,
+                               &sym_size,
+-                              &from_opd, &is_text, &is_ifunc)) {
++                              &from_opd, &is_text, &is_ifunc, &is_global)) {
+ 
+          DiSym  disym;
+          VG_(memset)(&disym, 0, sizeof(disym));
+@@ -799,6 +806,7 @@ void read_elf_symtab__normal(
+          disym.size      = sym_size;
+          disym.isText    = is_text;
+          disym.isIFunc   = is_ifunc;
++         disym.isGlobal  = is_global;
+          if (cstr) { ML_(dinfo_free)(cstr); cstr = NULL; }
+          vg_assert(disym.pri_name);
+          vg_assert(GET_TOCPTR_AVMA(disym.avmas) == 0);
+@@ -847,6 +855,7 @@ typedef
+       Bool       from_opd;
+       Bool       is_text;
+       Bool       is_ifunc;
++      Bool       is_global;
+    }
+    TempSym;
+ 
+@@ -911,6 +920,7 @@ void read_elf_symtab__ppc64be_linux(
+       SymAVMAs sym_avmas_really;
+       Int    sym_size = 0;
+       Bool   from_opd = False, is_text = False, is_ifunc = False;
++      Bool   is_global = False;
+       DiOffT sym_name_really = DiOffT_INVALID;
+       DiSym  disym;
+       VG_(memset)(&disym, 0, sizeof(disym));
+@@ -923,7 +933,7 @@ void read_elf_symtab__ppc64be_linux(
+                               &sym_name_really, 
+                               &sym_avmas_really,
+                               &sym_size,
+-                              &from_opd, &is_text, &is_ifunc)) {
++                              &from_opd, &is_text, &is_ifunc, &is_global)) {
+ 
+          /* Check if we've seen this (name,addr) key before. */
+          key.addr = sym_avmas_really.main;
+@@ -996,6 +1006,7 @@ void read_elf_symtab__ppc64be_linux(
+             elem->from_opd = from_opd;
+             elem->is_text  = is_text;
+             elem->is_ifunc = is_ifunc;
++            elem->is_global = is_global;
+             VG_(OSetGen_Insert)(oset, elem);
+             if (di->trace_symtab) {
+                HChar* str = ML_(img_strdup)(escn_strtab->img, "di.respl.2",
+@@ -1034,14 +1045,17 @@ void read_elf_symtab__ppc64be_linux(
+       disym.size      = elem->size;
+       disym.isText    = elem->is_text;
+       disym.isIFunc   = elem->is_ifunc;
++      disym.isGlobal  = elem->is_global;
+       if (cstr) { ML_(dinfo_free)(cstr); cstr = NULL; }
+       vg_assert(disym.pri_name != NULL);
+ 
+       ML_(addSym) ( di, &disym );
+       if (di->trace_symtab) {
+-         VG_(printf)("    rec(%c) [%4ld]:          "
++         VG_(printf)("    rec(%c%c%c) [%4ld]:          "
+                      "   val %#010lx, toc %#010lx, sz %4d  %s\n",
+                      disym.isText ? 't' : 'd',
++                     disym.isIFunc ? 'i' : '-',
++                     disym.isGlobal ? 'g' : 'l',
+                      i,
+                      disym.avmas.main,
+                      GET_TOCPTR_AVMA(disym.avmas),
+diff --git a/coregrind/m_debuginfo/readmacho.c b/coregrind/m_debuginfo/readmacho.c
+index 98ab048..3d406a4 100644
+--- a/coregrind/m_debuginfo/readmacho.c
++++ b/coregrind/m_debuginfo/readmacho.c
+@@ -365,6 +365,7 @@ void read_symtab( /*OUT*/XArray* /* DiSym */ syms,
+                          di->text_avma+di->text_size - sym_addr;
+       disym.isText     = True;
+       disym.isIFunc    = False;
++      disym.isGlobal   = False;
+       // Lots of user function names get prepended with an underscore.  Eg. the
+       // function 'f' becomes the symbol '_f'.  And the "below main"
+       // function is called "start".  So we skip the leading underscore, and
+diff --git a/coregrind/m_debuginfo/readpdb.c b/coregrind/m_debuginfo/readpdb.c
+index 8b63e95..1ebf863 100644
+--- a/coregrind/m_debuginfo/readpdb.c
++++ b/coregrind/m_debuginfo/readpdb.c
+@@ -1272,6 +1272,7 @@ static ULong DEBUG_SnarfCodeView(
+                              // FIXME: .namelen is sizeof(.data) including .name[]
+             vsym.isText    = (sym->generic.id == S_PUB_V1);
+             vsym.isIFunc   = False;
++            vsym.isGlobal  = True;
+             ML_(addSym)( di, &vsym );
+             n_syms_read++;
+          }
+@@ -1299,6 +1300,7 @@ static ULong DEBUG_SnarfCodeView(
+             vsym.isText    = !!(IMAGE_SCN_CNT_CODE 
+                                 & sectp[sym->data_v2.segment-1].Characteristics);
+             vsym.isIFunc   = False;
++            vsym.isGlobal  = True;
+             ML_(addSym)( di, &vsym );
+             n_syms_read++;
+          }
+@@ -1332,6 +1334,7 @@ static ULong DEBUG_SnarfCodeView(
+             vsym.isText    = !!(IMAGE_SCN_CNT_CODE
+                                 & sectp[sym->data_v2.segment-1].Characteristics);
+             vsym.isIFunc   = False;
++            vsym.isGlobal  = True;
+             ML_(addSym)( di, &vsym );
+             n_syms_read++;
+          }
+@@ -1365,6 +1368,7 @@ static ULong DEBUG_SnarfCodeView(
+          vsym.size      = sym->proc_v1.proc_len;
+          vsym.isText    = True;
+          vsym.isIFunc   = False;
++         vsym.isGlobal  = sym->generic.id == S_GPROC_V1;
+          if (debug)
+             VG_(umsg)("  Adding function %s addr=%#lx length=%u\n",
+                       symname, vsym.avmas.main, vsym.size );
+@@ -1386,6 +1390,7 @@ static ULong DEBUG_SnarfCodeView(
+          vsym.size      = sym->proc_v2.proc_len;
+          vsym.isText    = True;
+          vsym.isIFunc   = False;
++         vsym.isGlobal  = sym->generic.id == S_GPROC_V2;
+          if (debug)
+             VG_(umsg)("  Adding function %s addr=%#lx length=%u\n",
+                       symname, vsym.avmas.main, vsym.size );
+@@ -1408,6 +1413,7 @@ static ULong DEBUG_SnarfCodeView(
+             vsym.size      = sym->proc_v3.proc_len;
+             vsym.isText    = 1;
+             vsym.isIFunc   = False;
++            vsym.isGlobal  = sym->generic.id == S_GPROC_V3;
+             ML_(addSym)( di, &vsym );
+             n_syms_read++;
+          }
+diff --git a/coregrind/m_debuginfo/storage.c b/coregrind/m_debuginfo/storage.c
+index 45bc135..7b2e26a 100644
+--- a/coregrind/m_debuginfo/storage.c
++++ b/coregrind/m_debuginfo/storage.c
+@@ -98,10 +98,11 @@ void ML_(ppSym) ( Int idx, const DiSym* sym )
+    vg_assert(sym->pri_name);
+    if (sec_names)
+       vg_assert(sec_names);
+-   VG_(printf)( "%5d:  %c%c %#8lx .. %#8lx (%u)      %s%s",
++   VG_(printf)( "%5d:  %c%c%c %#8lx .. %#8lx (%u)      %s%s",
+                 idx,
+                 sym->isText ? 'T' : '-',
+                 sym->isIFunc ? 'I' : '-',
++                sym->isGlobal ? 'G' : '-',
+                 sym->avmas.main, 
+                 sym->avmas.main + sym->size - 1, sym->size,
+                 sym->pri_name, sec_names ? " " : "" );
+@@ -1646,7 +1647,7 @@ static void canonicaliseSymtab ( struct _DebugInfo* di )
+    Word  i, j, n_truncated;
+    Addr  sta1, sta2, end1, end2, toc1, toc2;
+    const HChar *pri1, *pri2, **sec1, **sec2;
+-   Bool  ist1, ist2, isf1, isf2;
++   Bool  ist1, ist2, isf1, isf2, isg1, isg2;
+ 
+ #  define SWAP(ty,aa,bb) \
+       do { ty tt = (aa); (aa) = (bb); (bb) = tt; } while (0)
+@@ -1693,6 +1694,8 @@ static void canonicaliseSymtab ( struct _DebugInfo* di )
+             }
+             /* mark w as an IFunc if either w or r are */
+             di->symtab[w].isIFunc = di->symtab[w].isIFunc || di->symtab[r].isIFunc;
++            /* likewise for global symbols */
++            di->symtab[w].isGlobal = di->symtab[w].isGlobal || di->symtab[r].isGlobal;
+             /* and use ::pri_names to indicate this slot is no longer in use */
+             di->symtab[r].pri_name = NULL;
+             if (di->symtab[r].sec_names) {
+@@ -1796,6 +1799,7 @@ static void canonicaliseSymtab ( struct _DebugInfo* di )
+       sec1 = di->symtab[i].sec_names;
+       ist1 = di->symtab[i].isText;
+       isf1 = di->symtab[i].isIFunc;
++      isg1 = di->symtab[i].isGlobal;
+ 
+       sta2 = di->symtab[i+1].avmas.main;
+       end2 = sta2 + di->symtab[i+1].size - 1;
+@@ -1805,6 +1809,7 @@ static void canonicaliseSymtab ( struct _DebugInfo* di )
+       sec2 = di->symtab[i+1].sec_names;
+       ist2 = di->symtab[i+1].isText;
+       isf2 = di->symtab[i+1].isIFunc;
++      isg2 = di->symtab[i+1].isGlobal;
+ 
+       if (sta1 < sta2) {
+          end1 = sta2 - 1;
+@@ -1814,7 +1819,7 @@ static void canonicaliseSymtab ( struct _DebugInfo* di )
+             sta1 = end2 + 1;
+             SWAP(Addr,sta1,sta2); SWAP(Addr,end1,end2); SWAP(Addr,toc1,toc2);
+             SWAP(const HChar*,pri1,pri2); SWAP(const HChar**,sec1,sec2);
+-            SWAP(Bool,ist1,ist2); SWAP(Bool,isf1,isf2);
++            SWAP(Bool,ist1,ist2); SWAP(Bool,isf1,isf2); SWAP(Bool, isg1, isg2);
+          } else 
+          if (end1 < end2) {
+             sta2 = end1 + 1;
+@@ -1831,6 +1836,7 @@ static void canonicaliseSymtab ( struct _DebugInfo* di )
+       di->symtab[i].sec_names = sec1;
+       di->symtab[i].isText    = ist1;
+       di->symtab[i].isIFunc   = isf1;
++      di->symtab[i].isGlobal  = isg1;
+ 
+       di->symtab[i+1].avmas.main = sta2;
+       di->symtab[i+1].size       = end2 - sta2 + 1;
+@@ -1840,6 +1846,7 @@ static void canonicaliseSymtab ( struct _DebugInfo* di )
+       di->symtab[i+1].sec_names = sec2;
+       di->symtab[i+1].isText    = ist2;
+       di->symtab[i+1].isIFunc   = isf2;
++      di->symtab[i+1].isGlobal  = isg2;
+ 
+       vg_assert(sta1 <= sta2);
+       vg_assert(di->symtab[i].size > 0);
+diff --git a/coregrind/m_redir.c b/coregrind/m_redir.c
+index 7e4df8d..3d3f70a 100644
+--- a/coregrind/m_redir.c
++++ b/coregrind/m_redir.c
+@@ -233,6 +233,7 @@ typedef
+       HChar* from_fnpatt;  /* from fnname pattern  */
+       Addr   to_addr;      /* where redirecting to */
+       Bool   isWrap;       /* wrap or replacement? */
++      Bool   isGlobal;     /* must the symbol to replace be global? */
+       Int    becTag; /* 0 through 9999.  Behavioural equivalance class tag.
+                         If two wrappers have the same (non-zero) tag, they
+                         are promising that they behave identically. */
+@@ -388,7 +389,7 @@ static HChar const* advance_to_comma ( HChar const* c ) {
+ 
+ void VG_(redir_notify_new_DebugInfo)( const DebugInfo* newdi )
+ {
+-   Bool         ok, isWrap;
++   Bool         ok, isWrap, isGlobal;
+    Int          i, nsyms, becTag, becPrio;
+    Spec*        specList;
+    Spec*        spec;
+@@ -518,13 +519,14 @@ void VG_(redir_notify_new_DebugInfo)( const DebugInfo* newdi )
+    for (i = 0; i < nsyms; i++) {
+       VG_(DebugInfo_syms_getidx)( newdi, i, &sym_avmas,
+                                   NULL, &sym_name_pri, &sym_names_sec,
+-                                  &isText, NULL );
++                                  &isText, NULL, NULL );
+       /* Set up to conveniently iterate over all names for this symbol. */
+       const HChar*  twoslots[2];
+       const HChar** names_init =
+          alloc_symname_array(sym_name_pri, sym_names_sec, &twoslots[0]);
+       const HChar** names;
+       for (names = names_init; *names; names++) {
++         isGlobal = False;
+          ok = VG_(maybe_Z_demangle)( *names,
+                                      &demangled_sopatt,
+                                      &demangled_fnpatt,
+@@ -579,15 +581,12 @@ void VG_(redir_notify_new_DebugInfo)( const DebugInfo* newdi )
+                have a matching lib synonym, then replace the sopatt.
+                Otherwise, just ignore this redirection spec. */
+ 
+-            if (!VG_(clo_soname_synonyms))
+-               continue; // No synonyms => skip the redir.
+-
+             /* Search for a matching synonym=newname*/
+             SizeT const sopatt_syn_len 
+                = VG_(strlen)(demangled_sopatt+VG_SO_SYN_PREFIX_LEN);
+             HChar const* last = VG_(clo_soname_synonyms);
+             
+-            while (*last) {
++            while (last != NULL && *last) {
+                HChar const* first = last;
+                last = advance_to_equal(first);
+                
+@@ -611,6 +610,17 @@ void VG_(redir_notify_new_DebugInfo)( const DebugInfo* newdi )
+                   last++;
+             }
+             
++	    // If the user didn't set it then somalloc is special. We
++	    // want to match public/global symbols that match the
++	    // fnpatt everywhere.
++	    if (replaced_sopatt == NULL
++		&& VG_(strcmp) ( demangled_sopatt, SO_SYN_MALLOC_NAME ) == 0)
++	      {
++		replaced_sopatt = VG_(strdup)("m_redir.rnnD.1", "*");
++		demangled_sopatt = replaced_sopatt;
++		isGlobal = True;
++	      }
++
+             // If we have not replaced the sopatt, then skip the redir.
+             if (replaced_sopatt == NULL)
+                continue;
+@@ -621,6 +631,7 @@ void VG_(redir_notify_new_DebugInfo)( const DebugInfo* newdi )
+          spec->from_fnpatt = dinfo_strdup("redir.rnnD.3", demangled_fnpatt);
+          spec->to_addr = sym_avmas.main;
+          spec->isWrap = isWrap;
++         spec->isGlobal = isGlobal;
+          spec->becTag = becTag;
+          spec->becPrio = becPrio;
+          /* check we're not adding manifestly stupid destinations */
+@@ -653,7 +664,7 @@ void VG_(redir_notify_new_DebugInfo)( const DebugInfo* newdi )
+       for (i = 0; i < nsyms; i++) {
+          VG_(DebugInfo_syms_getidx)( newdi, i, &sym_avmas,
+                                      NULL, &sym_name_pri, &sym_names_sec,
+-                                     &isText, NULL );
++                                     &isText, NULL, NULL );
+          const HChar*  twoslots[2];
+          const HChar** names_init =
+             alloc_symname_array(sym_name_pri, sym_names_sec, &twoslots[0]);
+@@ -785,7 +796,7 @@ void generate_and_add_actives (
+      )
+ {
+    Spec*   sp;
+-   Bool    anyMark, isText, isIFunc;
++   Bool    anyMark, isText, isIFunc, isGlobal;
+    Active  act;
+    Int     nsyms, i;
+    SymAVMAs  sym_avmas;
+@@ -813,7 +824,7 @@ void generate_and_add_actives (
+    for (i = 0; i < nsyms; i++) {
+       VG_(DebugInfo_syms_getidx)( di, i, &sym_avmas,
+                                   NULL, &sym_name_pri, &sym_names_sec,
+-                                  &isText, &isIFunc );
++                                  &isText, &isIFunc, &isGlobal );
+       const HChar*  twoslots[2];
+       const HChar** names_init =
+          alloc_symname_array(sym_name_pri, sym_names_sec, &twoslots[0]);
+@@ -827,7 +838,8 @@ void generate_and_add_actives (
+          for (sp = specs; sp; sp = sp->next) {
+             if (!sp->mark)
+                continue; /* soname doesn't match */
+-            if (VG_(string_match)( sp->from_fnpatt, *names )) {
++            if (VG_(string_match)( sp->from_fnpatt, *names )
++		&& (sp->isGlobal == False || isGlobal == True)) {
+                /* got a new binding.  Add to collection. */
+                act.from_addr   = sym_avmas.main;
+                act.to_addr     = sp->to_addr;
+@@ -1220,6 +1232,7 @@ static void add_hardwired_spec (const  HChar* sopatt, const HChar* fnpatt,
+    spec->from_fnpatt = CONST_CAST(HChar *,fnpatt);
+    spec->to_addr     = to_addr;
+    spec->isWrap      = False;
++   spec->isGlobal    = False;
+    spec->mandatory   = mandatory;
+    /* VARIABLE PARTS */
+    spec->mark        = False; /* not significant */
+@@ -1719,7 +1732,7 @@ static void handle_require_text_symbols ( const DebugInfo* di )
+          const HChar** sym_names_sec = NULL;
+          VG_(DebugInfo_syms_getidx)( di, j, NULL,
+                                      NULL, &sym_name_pri, &sym_names_sec,
+-                                     &isText, NULL );
++                                     &isText, NULL, NULL );
+          const HChar*  twoslots[2];
+          const HChar** names_init =
+             alloc_symname_array(sym_name_pri, sym_names_sec, &twoslots[0]);
+@@ -1773,10 +1786,11 @@ static void handle_require_text_symbols ( const DebugInfo* di )
+ static void show_spec ( const HChar* left, const Spec* spec )
+ {
+    VG_(message)( Vg_DebugMsg, 
+-                 "%s%-25s %-30s %s-> (%04d.%d) 0x%08lx\n",
++                 "%s%-25s %-30s %s%s-> (%04d.%d) 0x%08lx\n",
+                  left,
+                  spec->from_sopatt, spec->from_fnpatt,
+                  spec->isWrap ? "W" : "R",
++                 spec->isGlobal ? "G" : "L",
+                  spec->becTag, spec->becPrio,
+                  spec->to_addr );
+ }
+diff --git a/coregrind/m_replacemalloc/vg_replace_malloc.c b/coregrind/m_replacemalloc/vg_replace_malloc.c
+index ccac130..3c79c8a 100644
+--- a/coregrind/m_replacemalloc/vg_replace_malloc.c
++++ b/coregrind/m_replacemalloc/vg_replace_malloc.c
+@@ -291,7 +291,6 @@ static void init(void);
+ // For some lines, we will also define a replacement function
+ // whose only purpose is to be a soname synonym place holder
+ // that can be replaced using --soname-synonyms.
+-#define SO_SYN_MALLOC VG_SO_SYN(somalloc)
+ 
+ // malloc
+ #if defined(VGO_linux)
+diff --git a/coregrind/pub_core_debuginfo.h b/coregrind/pub_core_debuginfo.h
+index b698f2c..8f26f25 100644
+--- a/coregrind/pub_core_debuginfo.h
++++ b/coregrind/pub_core_debuginfo.h
+@@ -216,7 +216,8 @@ void VG_(DebugInfo_syms_getidx)  ( const DebugInfo *di,
+                                    /*OUT*/const HChar**   pri_name,
+                                    /*OUT*/const HChar***  sec_names,
+                                    /*OUT*/Bool*     isText,
+-                                   /*OUT*/Bool*     isIFunc );
++                                   /*OUT*/Bool*     isIFunc,
++                                   /*OUT*/Bool*     isGlobal );
+ /* ppc64-linux only: find the TOC pointer (R2 value) that should be in
+    force at the entry point address of the function containing
+    guest_code_addr.  Returns 0 if not known. */
+diff --git a/docs/xml/manual-core.xml b/docs/xml/manual-core.xml
+index edda8a1..c80aab0 100644
+--- a/docs/xml/manual-core.xml
++++ b/docs/xml/manual-core.xml
+@@ -2315,18 +2315,26 @@ need to use them.</para>
+       <option><![CDATA[--soname-synonyms=syn1=pattern1,syn2=pattern2,...]]></option>
+     </term>
+     <listitem>
+-      <para>When a shared library is loaded, Valgrind checks for 
+-      functions in the library that must be replaced or wrapped.
+-      For example, Memcheck replaces all malloc related
+-      functions (malloc, free, calloc, ...) with its own versions.
+-      Such replacements are done by default only in shared libraries whose
+-      soname matches a predefined soname pattern (e.g.
+-      <varname>libc.so*</varname> on linux).
+-      By default, no replacement is done for a statically linked
+-      library or for alternative libraries such as tcmalloc.
++      <para>When a shared library is loaded, Valgrind checks for
++      functions in the library that must be replaced or wrapped.  For
++      example, Memcheck replaces some string and memory functions
++      (strchr, strlen, strcpy, memchr, memcpy, memmove, etc.) with its
++      own versions.  Such replacements are normally done only in shared
++      libraries whose soname matches a predefined soname pattern (e.g.
++      <varname>libc.so*</varname> on linux).  By default, no
++      replacement is done for a statically linked library or for
++      alternative libraries, except for the allocation functions
++      (malloc, free, calloc, memalign, realloc, operator new, operator
++      delete, etc.) Such allocation functions are intercepted by
++      default in any shared library or in the executable if they are
++      exported as global symbols. This means that if a replacement
++      allocation library such as tcmalloc is found, its functions are
++      also intercepted by default.
++
+       In some cases, the replacements allow
+       <option>--soname-synonyms</option> to specify one additional
+-      synonym pattern, giving flexibility in the replacement. </para>
++      synonym pattern, giving flexibility in the replacement.  Or to
++      prevent interception of all public allocation symbols.</para>
+ 
+       <para>Currently, this flexibility is only allowed for the
+       malloc related functions, using the
+@@ -2339,27 +2347,31 @@ need to use them.</para>
+         <listitem>
+ 
+           <para>Alternate malloc library: to replace the malloc
+-          related functions in an alternate library with
+-          soname <varname>mymalloclib.so</varname>, give the
++          related functions in a specific alternate library with
++          soname <varname>mymalloclib.so</varname> (and not in any
++          others), give the
+           option <option>--soname-synonyms=somalloc=mymalloclib.so</option>.
+           A pattern can be used to match multiple libraries sonames.
+           For
+           example, <option>--soname-synonyms=somalloc=*tcmalloc*</option>
+-          will match the soname of all variants of the tcmalloc library
+-          (native, debug, profiled, ... tcmalloc variants). </para>
++          will match the soname of all variants of the tcmalloc
++          library (native, debug, profiled, ... tcmalloc
++          variants). </para>
+           <para>Note: the soname of a elf shared library can be
+           retrieved using the readelf utility. </para>
+ 
+         </listitem>
+ 
+         <listitem>
+-          <para>Replacements in a statically linked library are done by
+-          using the <varname>NONE</varname> pattern. For example, if
+-          you link with <varname>libtcmalloc.a</varname>, memcheck 
+-          will properly work when you give the
+-          option <option>--soname-synonyms=somalloc=NONE</option>.  Note
+-          that a NONE pattern will match the main executable and any
+-          shared library having no soname. </para>
++          <para>Replacements in a statically linked library are done
++          by using the <varname>NONE</varname> pattern. For example,
++          if you link with <varname>libtcmalloc.a</varname>, and only
++          want to intercept the malloc related functions in the
++          executable (and standard libraries) themselves, but not any
++          other shared libraries, you can give the
++          option <option>--soname-synonyms=somalloc=NONE</option>.
++          Note that a NONE pattern will match the main executable and
++          any shared library having no soname. </para>
+         </listitem>
+ 
+         <listitem>
+@@ -2369,6 +2381,17 @@ need to use them.</para>
+           </para>
+         </listitem>
+ 
++	<listitem>
++	  <para>To only intercept allocation symbols in the default
++	  system libraries, but not in any other shared library or the
++	  executable defining public malloc or operator new related
++	  functions use a non-existing library name
++	  like <option>--soname-synonyms=somalloc=nouserintercepts</option>
++	  (where <varname>nouserintercepts</varname> can be any
++	  non-existing library name).
++	  </para>
++	</listitem>
++
+       </itemizedlist>
+    </listitem>
+   </varlistentry>
+diff --git a/include/pub_tool_redir.h b/include/pub_tool_redir.h
+index bac00d7..21d186b 100644
+--- a/include/pub_tool_redir.h
++++ b/include/pub_tool_redir.h
+@@ -345,6 +345,12 @@
+ #define VG_SO_SYN_PREFIX     "VgSoSyn"
+ #define VG_SO_SYN_PREFIX_LEN 7
+ 
++// Special soname synonym place holder for the malloc symbols that can
++// be replaced using --soname-synonyms.  Otherwise will match all
++// public symbols in any shared library/executable.
++#define SO_SYN_MALLOC VG_SO_SYN(somalloc)
++#define SO_SYN_MALLOC_NAME "VgSoSynsomalloc"
++
+ #endif   // __PUB_TOOL_REDIR_H
+ 
+ /*--------------------------------------------------------------------*/
+diff --git a/memcheck/tests/Makefile.am b/memcheck/tests/Makefile.am
+index 68d9ca1..0f34127 100644
+--- a/memcheck/tests/Makefile.am
++++ b/memcheck/tests/Makefile.am
+@@ -291,6 +291,9 @@ EXTRA_DIST = \
+ 	wrap7.vgtest wrap7.stdout.exp wrap7.stderr.exp \
+ 	wrap8.vgtest wrap8.stdout.exp wrap8.stderr.exp \
+ 	wrap8.stdout.exp-ppc64 wrap8.stderr.exp-ppc64 \
++	wrapmalloc.vgtest wrapmalloc.stdout.exp wrapmalloc.stderr.exp \
++	wrapmallocstatic.vgtest wrapmallocstatic.stdout.exp \
++	wrapmallocstatic.stderr.exp \
+ 	writev1.stderr.exp writev1.stderr.exp-solaris writev1.vgtest \
+ 	xml1.stderr.exp xml1.stdout.exp xml1.vgtest xml1.stderr.exp-s390x-mvc \
+ 	threadname.vgtest threadname.stderr.exp \
+@@ -375,6 +378,7 @@ check_PROGRAMS = \
+ 	wcs \
+ 	xml1 \
+ 	wrap1 wrap2 wrap3 wrap4 wrap5 wrap6 wrap7 wrap7so.so wrap8 \
++	wrapmalloc wrapmallocso.so wrapmallocstatic \
+ 	writev1
+ 
+ if !SOLARIS_SUN_STUDIO_AS
+@@ -570,4 +574,26 @@ else
+ 				-Wl,-soname -Wl,wrap7so.so
+ endif
+ 
++# Build shared object for wrapmalloc
++wrapmalloc_SOURCES           = wrapmalloc.c
++wrapmalloc_DEPENDENCIES      = wrapmallocso.so
++if VGCONF_OS_IS_DARWIN
++ wrapmalloc_LDADD            = `pwd`/wrapmallocso.so
++ wrapmalloc_LDFLAGS          = $(AM_FLAG_M3264_PRI)
++else
++ wrapmalloc_LDADD            = wrapmallocso.so
++ wrapmalloc_LDFLAGS          = $(AM_FLAG_M3264_PRI) \
++				-Wl,-rpath,$(top_builddir)/memcheck/tests
++endif
++
++wrapmallocso_so_SOURCES      = wrapmallocso.c
++wrapmallocso_so_CFLAGS       = $(AM_CFLAGS) -fpic
++if VGCONF_OS_IS_DARWIN
++ wrapmallocso_so_LDFLAGS     = -fpic $(AM_FLAG_M3264_PRI) -dynamic \
++				-dynamiclib -all_load
++else
++ wrapmallocso_so_LDFLAGS     = -fpic $(AM_FLAG_M3264_PRI) -shared \
++				-Wl,-soname -Wl,wrapmallocso.so
++endif
++
+ xml1_CFLAGS             = $(AM_CFLAGS) -D_GNU_SOURCE
+diff --git a/memcheck/tests/new_override.vgtest b/memcheck/tests/new_override.vgtest
+index 50e6240..435e330 100644
+--- a/memcheck/tests/new_override.vgtest
++++ b/memcheck/tests/new_override.vgtest
+@@ -1,2 +1,6 @@
+ prog: new_override
++# Don't override the user defined somalloc functions in this test.
++# The test depends on some side effects and initializing memory done by
++# the user overidden operator new.
++vgopts: --soname-synonyms=somalloc=nouseroverride
+ stderr_filter: filter_allocs
+diff --git a/memcheck/tests/wrapmalloc.c b/memcheck/tests/wrapmalloc.c
+new file mode 100644
+index 0000000..2307e77
+--- /dev/null
++++ b/memcheck/tests/wrapmalloc.c
+@@ -0,0 +1,14 @@
++#include <stdio.h>
++#include <stdlib.h>
++
++/* Test that a program that has malloc/free interposed in a shared
++   library is also intercepted. */
++
++int main ( void )
++{
++   printf ("start\n");
++   void *p = malloc (1024);
++   free (p);
++   printf ("done\n");
++   return 0;
++}
+diff --git a/memcheck/tests/wrapmalloc.stderr.exp b/memcheck/tests/wrapmalloc.stderr.exp
+new file mode 100644
+index 0000000..d937776
+--- /dev/null
++++ b/memcheck/tests/wrapmalloc.stderr.exp
+@@ -0,0 +1,10 @@
++
++
++HEAP SUMMARY:
++    in use at exit: 0 bytes in 0 blocks
++  total heap usage: 1 allocs, 1 frees, 1,024 bytes allocated
++
++For a detailed leak analysis, rerun with: --leak-check=full
++
++For counts of detected and suppressed errors, rerun with: -v
++ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+diff --git a/memcheck/tests/wrapmalloc.stdout.exp b/memcheck/tests/wrapmalloc.stdout.exp
+new file mode 100644
+index 0000000..60b5fd2
+--- /dev/null
++++ b/memcheck/tests/wrapmalloc.stdout.exp
+@@ -0,0 +1,2 @@
++start
++done
+diff --git a/memcheck/tests/wrapmalloc.vgtest b/memcheck/tests/wrapmalloc.vgtest
+new file mode 100644
+index 0000000..a6dff4e
+--- /dev/null
++++ b/memcheck/tests/wrapmalloc.vgtest
+@@ -0,0 +1,2 @@
++prog: wrapmalloc
++
+diff --git a/memcheck/tests/wrapmallocso.c b/memcheck/tests/wrapmallocso.c
+new file mode 100644
+index 0000000..985ce56
+--- /dev/null
++++ b/memcheck/tests/wrapmallocso.c
+@@ -0,0 +1,17 @@
++#include <stdio.h>
++#include <stdlib.h>
++
++/* Fake malloc/free functions that just print something. When run
++   under memcheck these functions will be intercepted and not print
++   anything. */
++
++void *malloc ( size_t size )
++{
++  printf ("malloc\n");
++  return NULL;
++}
++
++void free (void *ptr)
++{
++  printf ("free\n");
++}
+diff --git a/memcheck/tests/wrapmallocstatic.c b/memcheck/tests/wrapmallocstatic.c
+new file mode 100644
+index 0000000..be6573b
+--- /dev/null
++++ b/memcheck/tests/wrapmallocstatic.c
+@@ -0,0 +1,29 @@
++#include <stdio.h>
++#include <stdlib.h>
++
++/* Test that a program that has malloc/free interposed in the
++   executable is also intercepted. */
++
++int main ( void )
++{
++   printf ("start\n");
++   void *p = malloc (1024);
++   free (p);
++   printf ("done\n");
++   return 0;
++}
++
++/* Fake malloc/free functions that just print something. When run
++   under memcheck these functions will be intercepted and not print
++   anything. */
++
++void *malloc ( size_t size )
++{
++  printf ("malloc\n");
++  return NULL;
++}
++
++void free (void *ptr)
++{
++  printf ("free\n");
++}
+diff --git a/memcheck/tests/wrapmallocstatic.stderr.exp b/memcheck/tests/wrapmallocstatic.stderr.exp
+new file mode 100644
+index 0000000..d937776
+--- /dev/null
++++ b/memcheck/tests/wrapmallocstatic.stderr.exp
+@@ -0,0 +1,10 @@
++
++
++HEAP SUMMARY:
++    in use at exit: 0 bytes in 0 blocks
++  total heap usage: 1 allocs, 1 frees, 1,024 bytes allocated
++
++For a detailed leak analysis, rerun with: --leak-check=full
++
++For counts of detected and suppressed errors, rerun with: -v
++ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+diff --git a/memcheck/tests/wrapmallocstatic.stdout.exp b/memcheck/tests/wrapmallocstatic.stdout.exp
+new file mode 100644
+index 0000000..60b5fd2
+--- /dev/null
++++ b/memcheck/tests/wrapmallocstatic.stdout.exp
+@@ -0,0 +1,2 @@
++start
++done
+diff --git a/memcheck/tests/wrapmallocstatic.vgtest b/memcheck/tests/wrapmallocstatic.vgtest
+new file mode 100644
+index 0000000..7b3c068
+--- /dev/null
++++ b/memcheck/tests/wrapmallocstatic.vgtest
+@@ -0,0 +1,2 @@
++prog: wrapmallocstatic
++
+diff -ur valgrind-3.11.0.orig/memcheck/tests/Makefile.in valgrind-3.11.0/memcheck/tests/Makefile.in
+--- valgrind-3.11.0.orig/memcheck/tests/Makefile.in	2015-11-15 18:08:05.457930383 +0100
++++ valgrind-3.11.0/memcheck/tests/Makefile.in	2015-11-15 18:14:10.828008973 +0100
+@@ -185,7 +185,8 @@
+ 	vcpu_fnfns$(EXEEXT) wcs$(EXEEXT) xml1$(EXEEXT) wrap1$(EXEEXT) \
+ 	wrap2$(EXEEXT) wrap3$(EXEEXT) wrap4$(EXEEXT) wrap5$(EXEEXT) \
+ 	wrap6$(EXEEXT) wrap7$(EXEEXT) wrap7so.so$(EXEEXT) \
+-	wrap8$(EXEEXT) writev1$(EXEEXT) $(am__EXEEXT_1) \
++	wrap8$(EXEEXT) wrapmalloc$(EXEEXT) wrapmallocso.so$(EXEEXT) \
++	wrapmallocstatic$(EXEEXT) writev1$(EXEEXT) $(am__EXEEXT_1) \
+ 	$(am__EXEEXT_2) $(am__EXEEXT_3) $(am__EXEEXT_4) \
+ 	$(am__EXEEXT_5)
+ 
+@@ -736,6 +737,18 @@
+ wrap8_SOURCES = wrap8.c
+ wrap8_OBJECTS = wrap8.$(OBJEXT)
+ wrap8_LDADD = $(LDADD)
++am_wrapmalloc_OBJECTS = wrapmalloc.$(OBJEXT)
++wrapmalloc_OBJECTS = $(am_wrapmalloc_OBJECTS)
++wrapmalloc_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(wrapmalloc_LDFLAGS) \
++	$(LDFLAGS) -o $@
++am_wrapmallocso_so_OBJECTS = wrapmallocso_so-wrapmallocso.$(OBJEXT)
++wrapmallocso_so_OBJECTS = $(am_wrapmallocso_so_OBJECTS)
++wrapmallocso_so_LDADD = $(LDADD)
++wrapmallocso_so_LINK = $(CCLD) $(wrapmallocso_so_CFLAGS) $(CFLAGS) \
++	$(wrapmallocso_so_LDFLAGS) $(LDFLAGS) -o $@
++wrapmallocstatic_SOURCES = wrapmallocstatic.c
++wrapmallocstatic_OBJECTS = wrapmallocstatic.$(OBJEXT)
++wrapmallocstatic_LDADD = $(LDADD)
+ writev1_SOURCES = writev1.c
+ writev1_OBJECTS = writev1.$(OBJEXT)
+ writev1_LDADD = $(LDADD)
+@@ -826,7 +839,8 @@
+ 	$(varinfo5_SOURCES) $(varinfo5so_so_SOURCES) varinfo6.c \
+ 	varinforestrict.c vcpu_fbench.c vcpu_fnfns.c wcs.c wrap1.c \
+ 	wrap2.c wrap3.c wrap4.c wrap5.c wrap6.c $(wrap7_SOURCES) \
+-	$(wrap7so_so_SOURCES) wrap8.c writev1.c xml1.c
++	$(wrap7so_so_SOURCES) wrap8.c $(wrapmalloc_SOURCES) \
++	$(wrapmallocso_so_SOURCES) wrapmallocstatic.c writev1.c xml1.c
+ DIST_SOURCES = accounting.c addressable.c atomic_incs.c badaddrvalue.c \
+ 	badfree.c badjump.c badjump2.c badloop.c badpoll.c badrw.c \
+ 	big_blocks_freed_list.c brk2.c buflen_check.c bug155125.c \
+@@ -863,7 +877,8 @@
+ 	$(varinfo5_SOURCES) $(varinfo5so_so_SOURCES) varinfo6.c \
+ 	varinforestrict.c vcpu_fbench.c vcpu_fnfns.c wcs.c wrap1.c \
+ 	wrap2.c wrap3.c wrap4.c wrap5.c wrap6.c $(wrap7_SOURCES) \
+-	$(wrap7so_so_SOURCES) wrap8.c writev1.c xml1.c
++	$(wrap7so_so_SOURCES) wrap8.c $(wrapmalloc_SOURCES) \
++	$(wrapmallocso_so_SOURCES) wrapmallocstatic.c writev1.c xml1.c
+ RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
+ 	ctags-recursive dvi-recursive html-recursive info-recursive \
+ 	install-data-recursive install-dvi-recursive \
+@@ -1544,6 +1559,9 @@
+ 	wrap7.vgtest wrap7.stdout.exp wrap7.stderr.exp \
+ 	wrap8.vgtest wrap8.stdout.exp wrap8.stderr.exp \
+ 	wrap8.stdout.exp-ppc64 wrap8.stderr.exp-ppc64 \
++	wrapmalloc.vgtest wrapmalloc.stdout.exp wrapmalloc.stderr.exp \
++	wrapmallocstatic.vgtest wrapmallocstatic.stdout.exp \
++	wrapmallocstatic.stderr.exp \
+ 	writev1.stderr.exp writev1.stderr.exp-solaris writev1.vgtest \
+ 	xml1.stderr.exp xml1.stdout.exp xml1.vgtest xml1.stderr.exp-s390x-mvc \
+ 	threadname.vgtest threadname.stderr.exp \
+@@ -1662,6 +1680,24 @@
+ @VGCONF_OS_IS_DARWIN_TRUE@wrap7so_so_LDFLAGS = -fpic $(AM_FLAG_M3264_PRI) -dynamic \
+ @VGCONF_OS_IS_DARWIN_TRUE@				-dynamiclib -all_load
+ 
++
++# Build shared object for wrapmalloc
++wrapmalloc_SOURCES = wrapmalloc.c
++wrapmalloc_DEPENDENCIES = wrapmallocso.so
++@VGCONF_OS_IS_DARWIN_FALSE@wrapmalloc_LDADD = wrapmallocso.so
++@VGCONF_OS_IS_DARWIN_TRUE@wrapmalloc_LDADD = `pwd`/wrapmallocso.so
++@VGCONF_OS_IS_DARWIN_FALSE@wrapmalloc_LDFLAGS = $(AM_FLAG_M3264_PRI) \
++@VGCONF_OS_IS_DARWIN_FALSE@				-Wl,-rpath,$(top_builddir)/memcheck/tests
++
++@VGCONF_OS_IS_DARWIN_TRUE@wrapmalloc_LDFLAGS = $(AM_FLAG_M3264_PRI)
++wrapmallocso_so_SOURCES = wrapmallocso.c
++wrapmallocso_so_CFLAGS = $(AM_CFLAGS) -fpic
++@VGCONF_OS_IS_DARWIN_FALSE@wrapmallocso_so_LDFLAGS = -fpic $(AM_FLAG_M3264_PRI) -shared \
++@VGCONF_OS_IS_DARWIN_FALSE@				-Wl,-soname -Wl,wrapmallocso.so
++
++@VGCONF_OS_IS_DARWIN_TRUE@wrapmallocso_so_LDFLAGS = -fpic $(AM_FLAG_M3264_PRI) -dynamic \
++@VGCONF_OS_IS_DARWIN_TRUE@				-dynamiclib -all_load
++
+ xml1_CFLAGS = $(AM_CFLAGS) -D_GNU_SOURCE
+ all: all-recursive
+ 
+@@ -2286,6 +2322,18 @@
+ 	@rm -f wrap8$(EXEEXT)
+ 	$(AM_V_CCLD)$(LINK) $(wrap8_OBJECTS) $(wrap8_LDADD) $(LIBS)
+ 
++wrapmalloc$(EXEEXT): $(wrapmalloc_OBJECTS) $(wrapmalloc_DEPENDENCIES) $(EXTRA_wrapmalloc_DEPENDENCIES) 
++	@rm -f wrapmalloc$(EXEEXT)
++	$(AM_V_CCLD)$(wrapmalloc_LINK) $(wrapmalloc_OBJECTS) $(wrapmalloc_LDADD) $(LIBS)
++
++wrapmallocso.so$(EXEEXT): $(wrapmallocso_so_OBJECTS) $(wrapmallocso_so_DEPENDENCIES) $(EXTRA_wrapmallocso_so_DEPENDENCIES) 
++	@rm -f wrapmallocso.so$(EXEEXT)
++	$(AM_V_CCLD)$(wrapmallocso_so_LINK) $(wrapmallocso_so_OBJECTS) $(wrapmallocso_so_LDADD) $(LIBS)
++
++wrapmallocstatic$(EXEEXT): $(wrapmallocstatic_OBJECTS) $(wrapmallocstatic_DEPENDENCIES) $(EXTRA_wrapmallocstatic_DEPENDENCIES) 
++	@rm -f wrapmallocstatic$(EXEEXT)
++	$(AM_V_CCLD)$(LINK) $(wrapmallocstatic_OBJECTS) $(wrapmallocstatic_LDADD) $(LIBS)
++
+ writev1$(EXEEXT): $(writev1_OBJECTS) $(writev1_DEPENDENCIES) $(EXTRA_writev1_DEPENDENCIES) 
+ 	@rm -f writev1$(EXEEXT)
+ 	$(AM_V_CCLD)$(LINK) $(writev1_OBJECTS) $(writev1_LDADD) $(LIBS)
+@@ -2446,6 +2494,9 @@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wrap7.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wrap7so_so-wrap7so.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wrap8.Po@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wrapmalloc.Po@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wrapmallocso_so-wrapmallocso.Po@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wrapmallocstatic.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/writev1.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xml1-xml1.Po@am__quote@
+ 
+@@ -3011,6 +3062,20 @@
+ @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+ @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(wrap7so_so_CFLAGS) $(CFLAGS) -c -o wrap7so_so-wrap7so.obj `if test -f 'wrap7so.c'; then $(CYGPATH_W) 'wrap7so.c'; else $(CYGPATH_W) '$(srcdir)/wrap7so.c'; fi`
+ 
++wrapmallocso_so-wrapmallocso.o: wrapmallocso.c
++@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(wrapmallocso_so_CFLAGS) $(CFLAGS) -MT wrapmallocso_so-wrapmallocso.o -MD -MP -MF $(DEPDIR)/wrapmallocso_so-wrapmallocso.Tpo -c -o wrapmallocso_so-wrapmallocso.o `test -f 'wrapmallocso.c' || echo '$(srcdir)/'`wrapmallocso.c
++@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/wrapmallocso_so-wrapmallocso.Tpo $(DEPDIR)/wrapmallocso_so-wrapmallocso.Po
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='wrapmallocso.c' object='wrapmallocso_so-wrapmallocso.o' libtool=no @AMDEPBACKSLASH@
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(wrapmallocso_so_CFLAGS) $(CFLAGS) -c -o wrapmallocso_so-wrapmallocso.o `test -f 'wrapmallocso.c' || echo '$(srcdir)/'`wrapmallocso.c
++
++wrapmallocso_so-wrapmallocso.obj: wrapmallocso.c
++@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(wrapmallocso_so_CFLAGS) $(CFLAGS) -MT wrapmallocso_so-wrapmallocso.obj -MD -MP -MF $(DEPDIR)/wrapmallocso_so-wrapmallocso.Tpo -c -o wrapmallocso_so-wrapmallocso.obj `if test -f 'wrapmallocso.c'; then $(CYGPATH_W) 'wrapmallocso.c'; else $(CYGPATH_W) '$(srcdir)/wrapmallocso.c'; fi`
++@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/wrapmallocso_so-wrapmallocso.Tpo $(DEPDIR)/wrapmallocso_so-wrapmallocso.Po
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='wrapmallocso.c' object='wrapmallocso_so-wrapmallocso.obj' libtool=no @AMDEPBACKSLASH@
++@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(wrapmallocso_so_CFLAGS) $(CFLAGS) -c -o wrapmallocso_so-wrapmallocso.obj `if test -f 'wrapmallocso.c'; then $(CYGPATH_W) 'wrapmallocso.c'; else $(CYGPATH_W) '$(srcdir)/wrapmallocso.c'; fi`
++
+ xml1-xml1.o: xml1.c
+ @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xml1_CFLAGS) $(CFLAGS) -MT xml1-xml1.o -MD -MP -MF $(DEPDIR)/xml1-xml1.Tpo -c -o xml1-xml1.o `test -f 'xml1.c' || echo '$(srcdir)/'`xml1.c
+ @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/xml1-xml1.Tpo $(DEPDIR)/xml1-xml1.Po
