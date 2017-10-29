@@ -7,12 +7,12 @@
 Summary:	An open-source memory debugger
 Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
-Version:	3.12.0
+Version:	3.13.0
 Release:	1
 License:	GPL v2+
 Group:		Development/Tools
-Source0:	http://valgrind.org/downloads/%{name}-%{version}.tar.bz2
-# Source0-md5:	6eb03c0c10ea917013a7622e483d61bb
+Source0:	ftp://sourceware.org/pub/valgrind/%{name}-%{version}.tar.bz2
+# Source0-md5:	817dd08f1e8a66336b9ff206400a5369
 Patch0:		%{name}-native-cpuid.patch
 Patch1:		%{name}-ld_linux_strlen.patch
 URL:		http://valgrind.org/
