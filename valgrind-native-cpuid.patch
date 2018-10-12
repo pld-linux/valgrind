@@ -57,23 +57,15 @@ diff -uNr valgrind-3.6.0.orig/VEX/priv/guest_amd64_helpers.c valgrind-3.6.0/VEX/
        /* This isn't entirely correct, CPUID should depend on the VEX
           capabilities, not on the underlying CPU. See bug #324882. */
        if ((archinfo->hwcaps & VEX_HWCAPS_AMD64_SSE3) &&
-diff -uNr valgrind-3.6.0.orig/VEX/pub/libvex.h valgrind-3.6.0/VEX/pub/libvex.h
---- valgrind-3.6.0.orig/VEX/pub/libvex.h	2010-10-20 22:19:52.000000000 +0200
-+++ valgrind-3.6.0/VEX/pub/libvex.h	2011-01-17 20:41:02.906490947 +0100
-@@ -60,7 +60,6 @@
-    }
-    VexArch;
- 
--
- /* For a given architecture, these specify extra capabilities beyond
-    the minimum supported (baseline) capabilities.  They may be OR'd
-    together, although some combinations don't make sense.  (eg, SSE2
-@@ -270,6 +269,8 @@
-       /* EXPERIMENTAL: chase across conditional branches?  Not all
-          front ends honour this.  Default: NO. */
-       Bool guest_chase_cond;
+--- valgrind-3.14.0/VEX/pub/libvex.h~	2018-10-12 20:12:49.000000000 +0200
++++ valgrind-3.14.0/VEX/pub/libvex.h	2018-10-12 20:13:55.990940300 +0200
+@@ -519,6 +519,8 @@ typedef
+          - '3': current, faster implementation; perhaps producing slightly worse
+                 spilling decisions. */
+       UInt regalloc_version;
 +      /* For x86 and amd64 allow the use of native cpuid inst */
 +      Int iropt_native_cpuid;
     }
     VexControl;
  
+
