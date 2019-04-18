@@ -7,12 +7,12 @@
 Summary:	An open-source memory debugger
 Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
-Version:	3.14.0
+Version:	3.15.0
 Release:	1
 License:	GPL v2+
 Group:		Development/Tools
 Source0:	https://sourceware.org/pub/valgrind/%{name}-%{version}.tar.bz2
-# Source0-md5:	74175426afa280184b62591b58c671b3
+# Source0-md5:	46e5fbdcbc3502a5976a317a0860a975
 Patch0:		%{name}-native-cpuid.patch
 Patch1:		%{name}-ld_linux_strlen.patch
 URL:		http://valgrind.org/
@@ -70,6 +70,7 @@ ac_cv_path_GDB=/usr/bin/gdb \
 %configure \
 	CC=gcc \
 	--enable-tls \
+	%{!?with_mpi:--with-mpicc=/bin/false} \
 %if %{_lib} != "lib"
 	--enable-only64bit \
 %endif \
@@ -115,6 +116,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/%{name}/*.xml
 %{_libdir}/%{name}/default.supp
 %{_libdir}/%{name}/lib*-linux.a
+%{_libexecdir}/%{name}
 %{_includedir}/valgrind
 %{_mandir}/man1/callgrind_annotate.1*
 %{_mandir}/man1/callgrind_control.1*
@@ -123,6 +125,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/cg_merge.1*
 %{_mandir}/man1/ms_print.1*
 %{_mandir}/man1/valgrind.1*
+%{_mandir}/man1/valgrind-di-server.1*
 %{_mandir}/man1/valgrind-listener.1*
 %{_mandir}/man1/vgdb.1*
 %{_pkgconfigdir}/valgrind.pc

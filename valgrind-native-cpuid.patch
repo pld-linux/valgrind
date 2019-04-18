@@ -12,10 +12,10 @@ diff -uNr valgrind-3.6.0.orig/coregrind/m_main.c valgrind-3.6.0/coregrind/m_main
           log_to = VgLogTo_Fd;
 --- valgrind-3.11.0/VEX/priv/guest_amd64_defs.h.orig	2015-11-15 19:07:11.062949101 +0100
 +++ valgrind-3.11.0/VEX/priv/guest_amd64_defs.h	2015-11-15 19:09:09.992944110 +0100
-@@ -169,6 +169,7 @@
- extern void  amd64g_dirtyhelper_CPUID_sse42_and_cx16 ( VexGuestAMD64State* st );
+@@ -170,6 +170,7 @@ extern void  amd64g_dirtyhelper_CPUID_ss
  extern void  amd64g_dirtyhelper_CPUID_avx_and_cx16 ( VexGuestAMD64State* st );
- extern void  amd64g_dirtyhelper_CPUID_avx2 ( VexGuestAMD64State* st );
+ extern void  amd64g_dirtyhelper_CPUID_avx2 ( VexGuestAMD64State* st,
+                                              ULong hasF16C, ULong hasRDRAND );
 +extern void  amd64g_dirtyhelper_CPUID_native ( VexGuestAMD64State* st );
  
  extern void  amd64g_dirtyhelper_FINIT ( VexGuestAMD64State* );
