@@ -1,0 +1,11 @@
+--- valgrind-3.15.0/dhat/Makefile.am.orig	2019-04-13 12:56:21.000000000 +0200
++++ valgrind-3.15.0/dhat/Makefile.am	2019-06-08 21:33:09.268983176 +0200
+@@ -9,7 +9,7 @@
+ #----------------------------------------------------------------------------
+ 
+ # Ensure the viewer components get copied into the install tree.
+-dhatdir = $(pkglibexecdir)
++dhatdir = $(pkgdatadir)
+ dhat_DATA = dh_view.html dh_view.css dh_view.js
+ 
+ #----------------------------------------------------------------------------

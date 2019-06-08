@@ -15,6 +15,7 @@ Source0:	https://sourceware.org/pub/valgrind/%{name}-%{version}.tar.bz2
 # Source0-md5:	46e5fbdcbc3502a5976a317a0860a975
 Patch0:		%{name}-native-cpuid.patch
 Patch1:		%{name}-ld_linux_strlen.patch
+Patch2:		%{name}-datadir.patch
 URL:		http://valgrind.org/
 BuildRequires:	autoconf >= 2.50
 BuildRequires:	automake >= 1:1.10
@@ -57,6 +58,7 @@ pracować.
 %setup -q
 %patch0 -p1
 %patch1 -p1
+%patch2 -p1
 
 sed -i -e 's:^CFLAGS="-Wno-long-long":CFLAGS="$CFLAGS -Wno-long-long":' configure.ac
 
@@ -116,7 +118,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/%{name}/*.xml
 %{_libdir}/%{name}/default.supp
 %{_libdir}/%{name}/lib*-linux.a
-%{_libexecdir}/%{name}
+%{_datadir}/%{name}
 %{_includedir}/valgrind
 %{_mandir}/man1/callgrind_annotate.1*
 %{_mandir}/man1/callgrind_control.1*
