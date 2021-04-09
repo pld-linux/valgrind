@@ -2,24 +2,24 @@ diff -uNr valgrind-3.6.0.orig/coregrind/m_main.c valgrind-3.6.0/coregrind/m_main
 --- valgrind-3.6.0.orig/coregrind/m_main.c	2010-10-20 22:19:45.000000000 +0200
 +++ valgrind-3.6.0/coregrind/m_main.c	2011-01-17 20:38:26.676472616 +0100
 @@ -519,6 +519,8 @@
-                        VG_(clo_vex_control).guest_chase_thresh, 0, 99) {}
-       else if VG_BOOL_CLO(arg, "--vex-guest-chase-cond",
-                        VG_(clo_vex_control).guest_chase_cond) {}
+                        VG_(clo_vex_control).guest_max_insns, 1, 100) {}
+    else if VG_BOOL_CLO(arg, "--vex-guest-chase",
+                        VG_(clo_vex_control).guest_chase) {}
 +      else if VG_BOOL_CLO(arg, "--vex-native-cpuid",
 +                       VG_(clo_vex_control).iropt_native_cpuid) {}
  
-       else if VG_INT_CLO(arg, "--log-fd", tmp_log_fd) {
-          log_to = VgLogTo_Fd;
+    else if VG_INT_CLO(arg, "--log-fd", pos->tmp_log_fd) {
+       pos->log_to = VgLogTo_Fd;
 --- valgrind-3.11.0/VEX/priv/guest_amd64_defs.h.orig	2015-11-15 19:07:11.062949101 +0100
 +++ valgrind-3.11.0/VEX/priv/guest_amd64_defs.h	2015-11-15 19:09:09.992944110 +0100
 @@ -170,6 +170,7 @@ extern void  amd64g_dirtyhelper_CPUID_ss
- extern void  amd64g_dirtyhelper_CPUID_avx_and_cx16 ( VexGuestAMD64State* st );
- extern void  amd64g_dirtyhelper_CPUID_avx2 ( VexGuestAMD64State* st,
-                                              ULong hasF16C, ULong hasRDRAND );
+ extern void amd64g_dirtyhelper_CPUID_avx2 ( VexGuestAMD64State* st,
+                                             ULong hasF16C, ULong hasRDRAND,
+                                             ULong hasRDSEED );
 +extern void  amd64g_dirtyhelper_CPUID_native ( VexGuestAMD64State* st );
  
- extern void  amd64g_dirtyhelper_FINIT ( VexGuestAMD64State* );
  
+ extern void  amd64g_dirtyhelper_FINIT ( VexGuestAMD64State* );
 diff -uNr valgrind-3.6.0.orig/VEX/priv/guest_amd64_helpers.c valgrind-3.6.0/VEX/priv/guest_amd64_helpers.c
 --- valgrind-3.6.0.orig/VEX/priv/guest_amd64_helpers.c	2010-10-20 22:19:51.000000000 +0200
 +++ valgrind-3.6.0/VEX/priv/guest_amd64_helpers.c	2011-01-17 20:36:00.884903903 +0100
@@ -41,9 +41,9 @@ diff -uNr valgrind-3.6.0.orig/VEX/priv/guest_amd64_helpers.c valgrind-3.6.0/VEX/
 +}
 +
 +
- ULong amd64g_calculate_RCR ( ULong arg, 
-                              ULong rot_amt, 
-                              ULong rflags_in, 
+ /*---------------------------------------------------------------*/
+ /*--- Misc integer helpers, including rotates and crypto.     ---*/
+ /*---------------------------------------------------------------*/
 --- valgrind-3.11.0/VEX/priv/guest_amd64_toIR.c.orig	2015-11-15 19:07:11.129615765 +0100
 +++ valgrind-3.11.0/VEX/priv/guest_amd64_toIR.c	2015-11-15 19:13:47.379599136 +0100
 @@ -21920,6 +21920,10 @@
@@ -56,7 +56,7 @@ diff -uNr valgrind-3.6.0.orig/VEX/priv/guest_amd64_helpers.c valgrind-3.6.0/VEX/
 +      } else
        /* This isn't entirely correct, CPUID should depend on the VEX
           capabilities, not on the underlying CPU. See bug #324882. */
-       if ((archinfo->hwcaps & VEX_HWCAPS_AMD64_SSE3) &&
+       if ((archinfo->hwcaps & VEX_HWCAPS_AMD64_SSSE3) &&
 --- valgrind-3.14.0/VEX/pub/libvex.h~	2018-10-12 20:12:49.000000000 +0200
 +++ valgrind-3.14.0/VEX/pub/libvex.h	2018-10-12 20:13:55.990940300 +0200
 @@ -519,6 +519,8 @@ typedef

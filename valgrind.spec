@@ -7,12 +7,12 @@
 Summary:	An open-source memory debugger
 Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
-Version:	3.15.0
+Version:	3.17.0
 Release:	1
 License:	GPL v2+
 Group:		Development/Tools
 Source0:	https://sourceware.org/pub/valgrind/%{name}-%{version}.tar.bz2
-# Source0-md5:	46e5fbdcbc3502a5976a317a0860a975
+# Source0-md5:	afe11b5572c3121a781433b7c0ab741b
 Patch0:		%{name}-native-cpuid.patch
 Patch1:		%{name}-ld_linux_strlen.patch
 Patch2:		%{name}-datadir.patch
@@ -73,7 +73,7 @@ ac_cv_path_GDB=/usr/bin/gdb \
 	CC=gcc \
 	--enable-tls \
 	%{!?with_mpi:--with-mpicc=/bin/false} \
-%if %{_lib} != "lib"
+%if "%{_lib}" != "lib"
 	--enable-only64bit \
 %endif \
 	--enable-lto=yes \
@@ -109,15 +109,16 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755,root,root) %{_bindir}/valgrind-listener
 %attr(755,root,root) %{_bindir}/vgdb
 %dir %{_libdir}/%{name}
-%attr(755,root,root) %{_libdir}/%{name}/*-linux
-%attr(755,root,root) %{_libdir}/%{name}/vgpreload_*-linux.so
+%{_libdir}/%{name}/lib*-linux.a
 %if %{with mpi}
 # TODO: subpackage?
 %attr(755,root,root) %{_libdir}/%{name}/libmpiwrap-*-linux.so
 %endif
-%{_libdir}/%{name}/*.xml
-%{_libdir}/%{name}/default.supp
-%{_libdir}/%{name}/lib*-linux.a
+%dir %{_libexecdir}/%{name}
+%attr(755,root,root) %{_libexecdir}/%{name}/*-linux
+%attr(755,root,root) %{_libexecdir}/%{name}/vgpreload_*-linux.so
+%{_libexecdir}/%{name}/*.xml
+%{_libexecdir}/%{name}/default.supp
 %{_datadir}/%{name}
 %{_includedir}/valgrind
 %{_mandir}/man1/callgrind_annotate.1*
