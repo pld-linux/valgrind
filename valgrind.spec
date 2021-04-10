@@ -30,7 +30,7 @@ BuildRequires:	libstdc++-devel
 %{?with_mpi:BuildRequires:	mpi-devel}
 Obsoletes:	valgrind-callgrind < 0.11
 Obsoletes:	valgrind-calltree < 0.10
-ExclusiveArch:	%{ix86} %{x8664} %{arm} ppc ppc64 s390x x32 aarch64
+ExclusiveArch:	%{ix86} %{x8664} armv7hl armv7hnl armv7l ppc ppc64 s390x x32 aarch64
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %define		_noautostrip	.*/vgpreload.*\\.so
