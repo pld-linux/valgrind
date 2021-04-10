@@ -16,7 +16,7 @@ Source0:	https://sourceware.org/pub/valgrind/%{name}-%{version}.tar.bz2
 Patch0:		%{name}-native-cpuid.patch
 Patch1:		%{name}-ld_linux_strlen.patch
 Patch2:		%{name}-datadir.patch
-URL:		http://valgrind.org/
+URL:		https://www.valgrind.org/
 BuildRequires:	autoconf >= 2.50
 BuildRequires:	automake >= 1:1.10
 BuildRequires:	gcc >= 5:3.0
@@ -28,9 +28,9 @@ BuildRequires:	glibc-devel >= 6:2.2
 BuildRequires:	libgomp-devel
 BuildRequires:	libstdc++-devel
 %{?with_mpi:BuildRequires:	mpi-devel}
-Obsoletes:	valgrind-callgrind
-Obsoletes:	valgrind-calltree
-ExclusiveArch:	%{ix86} %{x8664} arm ppc ppc64 s390x x32 aarch64
+Obsoletes:	valgrind-callgrind < 0.11
+Obsoletes:	valgrind-calltree < 0.10
+ExclusiveArch:	%{ix86} %{x8664} %{arm} ppc ppc64 s390x x32 aarch64
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %define		_noautostrip	.*/vgpreload.*\\.so
@@ -76,7 +76,7 @@ ac_cv_path_GDB=/usr/bin/gdb \
 %if "%{_lib}" != "lib"
 	--enable-only64bit \
 %endif \
-	--enable-lto=yes \
+	--enable-lto \
 	LDFLAGS="" # no strip!
 
 %{__make}
@@ -114,7 +114,9 @@ rm -rf $RPM_BUILD_ROOT
 # TODO: subpackage?
 %attr(755,root,root) %{_libdir}/%{name}/libmpiwrap-*-linux.so
 %endif
+%if "%{_libexecdir}" != "%{_libdir}"
 %dir %{_libexecdir}/%{name}
+%endif
 %attr(755,root,root) %{_libexecdir}/%{name}/*-linux
 %attr(755,root,root) %{_libexecdir}/%{name}/vgpreload_*-linux.so
 %{_libexecdir}/%{name}/*.xml
