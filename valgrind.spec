@@ -70,7 +70,6 @@ sed -i -e 's:^CFLAGS="-Wno-long-long":CFLAGS="$CFLAGS -Wno-long-long":' configur
 
 ac_cv_path_GDB=/usr/bin/gdb \
 %configure \
-	CC=gcc \
 	--enable-tls \
 	%{!?with_mpi:--with-mpicc=/bin/false} \
 %if "%{_lib}" != "lib"
