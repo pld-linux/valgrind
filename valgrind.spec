@@ -39,6 +39,8 @@ BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 # ld portion broken
 %undefine	with_ccache
 
+%define		specflags_arm	-marm
+
 %description
 Valgrind is a GPL'd system for debugging and profiling Linux programs.
 With the tools that come with Valgrind, you can automatically detect
