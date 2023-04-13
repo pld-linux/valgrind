@@ -28,9 +28,10 @@ BuildRequires:	glibc-devel >= 6:2.2
 BuildRequires:	libgomp-devel
 BuildRequires:	libstdc++-devel
 %{?with_mpi:BuildRequires:	mpi-devel}
+BuildRequires:	rpmbuild(macros) >= 2.007
 Obsoletes:	valgrind-callgrind < 0.11
 Obsoletes:	valgrind-calltree < 0.10
-ExclusiveArch:	%{ix86} %{x8664} armv7hl armv7hnl armv7l ppc ppc64 s390x x32 aarch64
+ExclusiveArch:	%{ix86} %{x8664} %{armv7} ppc ppc64 s390x x32 aarch64
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %define		_noautostrip	.*/vgpreload.*\\.so
