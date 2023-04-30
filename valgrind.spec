@@ -7,12 +7,12 @@
 Summary:	An open-source memory debugger
 Summary(pl.UTF-8):	Otwarty odpluskwiacz pamięci
 Name:		valgrind
-Version:	3.20.0
+Version:	3.21.0
 Release:	1
 License:	GPL v2+
 Group:		Development/Tools
 Source0:	https://sourceware.org/pub/valgrind/%{name}-%{version}.tar.bz2
-# Source0-md5:	e3ca8e03c6c527e80e7da5135a1b6beb
+# Source0-md5:	b8b89b327732c12191306c3d31cfd4b1
 Patch0:		%{name}-native-cpuid.patch
 Patch1:		%{name}-ld_linux_strlen.patch
 Patch2:		%{name}-datadir.patch
@@ -62,6 +62,15 @@ pracować.
 %patch0 -p1
 %patch1 -p1
 %patch2 -p1
+
+%{__sed} -E -i -e '1s,#!\s*/usr/bin/env\s+python3(\s|$),#!%{__python3}\1,' \
+	cachegrind/cg_annotate.in \
+	cachegrind/cg_merge.in \
+	cachegrind/cg_diff.in
+
+%{__sed} -E -i -e '1s,#!\s*/usr/bin/env\s+perl(\s|$),#!%{__perl}\1,' \
+	callgrind/callgrind_annotate.in \
+	callgrind/callgrind_control.in
 
 %build
 %{__aclocal}
@@ -118,6 +127,8 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libexecdir}/%{name}
 %endif
 %attr(755,root,root) %{_libexecdir}/%{name}/*-linux
+%attr(755,root,root) %{_libexecdir}/%{name}/valgrind-monitor.py
+%attr(755,root,root) %{_libexecdir}/%{name}/valgrind-monitor-def.py
 %attr(755,root,root) %{_libexecdir}/%{name}/vgpreload_*-linux.so
 %{_libexecdir}/%{name}/*.xml
 %{_libexecdir}/%{name}/default.supp
