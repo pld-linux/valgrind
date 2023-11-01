@@ -34,7 +34,7 @@ Obsoletes:	valgrind-calltree < 0.10
 ExclusiveArch:	%{ix86} %{x8664} %{armv7} ppc ppc64 s390x x32 aarch64
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
-%define		_noautostrip	.*\\(/vgpreload.*\\.so\\|\\.[ch]$\\)
+%define		_noautostrip	.*/vgpreload.*\\.so
 %define		filterout_c	-fstack-protector-strong
 # ld portion broken
 %undefine	with_ccache
