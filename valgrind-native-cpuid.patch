@@ -64,7 +64,7 @@ diff -uNr valgrind-3.6.0.orig/VEX/priv/guest_amd64_helpers.c valgrind-3.6.0/VEX/
                  spilling decisions. */
        UInt regalloc_version;
 +      /* For x86 and amd64 allow the use of native cpuid inst */
-+      Int iropt_native_cpuid;
++      Bool iropt_native_cpuid;
     }
     VexControl;
  
