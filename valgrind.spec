@@ -78,8 +78,8 @@ pracować.
 %{__autoheader}
 %{__automake}
 
-ac_cv_path_GDB=/usr/bin/gdb \
 %configure \
+	GDB=/usr/bin/gdb \
 	--enable-tls \
 	%{!?with_mpi:--with-mpicc=/bin/false} \
 %if "%{_lib}" != "lib"
