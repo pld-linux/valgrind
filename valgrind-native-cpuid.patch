@@ -60,9 +60,9 @@ diff -uNr valgrind-3.6.0.orig/VEX/priv/guest_amd64_helpers.c valgrind-3.6.0/VEX/
 --- valgrind-3.14.0/VEX/pub/libvex.h~	2018-10-12 20:12:49.000000000 +0200
 +++ valgrind-3.14.0/VEX/pub/libvex.h	2018-10-12 20:13:55.990940300 +0200
 @@ -519,6 +519,8 @@ typedef
-          - '3': current, faster implementation; perhaps producing slightly worse
-                 spilling decisions. */
-       UInt regalloc_version;
+       /* When false constant folding and algebric simplification is disabled.
+          This is used in the iropt tester. */
+       Bool iropt_fold_expr;
 +      /* For x86 and amd64 allow the use of native cpuid inst */
 +      Bool iropt_native_cpuid;
     }
