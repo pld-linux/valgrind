@@ -15,7 +15,7 @@ diff -uNr valgrind-3.6.0.orig/coregrind/m_main.c valgrind-3.6.0/coregrind/m_main
 @@ -170,6 +170,7 @@ extern void  amd64g_dirtyhelper_CPUID_ss
  extern void amd64g_dirtyhelper_CPUID_avx2 ( VexGuestAMD64State* st,
                                              ULong hasF16C, ULong hasRDRAND,
-                                             ULong hasRDSEED );
+                                             ULong hasRDSEED, ULong hasLZCNT );
 +extern void  amd64g_dirtyhelper_CPUID_native ( VexGuestAMD64State* st );
  
  
